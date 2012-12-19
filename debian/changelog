@@ -1,0 +1,5 @@
+colobot (0~git2012121900-1~OdyX0) UNRELEASED; urgency=low
+
+  * Initial release. (Closes: #695829)
+
+ -- Didier Raboud <odyx@debian.org>  Wed, 19 Dec 2012 09:10:47 +0100

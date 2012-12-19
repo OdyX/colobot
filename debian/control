@@ -1,0 +1,63 @@
+Source: colobot
+Section: games
+Priority: optional
+Maintainer: Debian Games Team <pkg-games-devel@lists.alioth.debian.org>
+Uploaders: Didier Raboud <odyx@debian.org>
+Build-Depends: 
+ debhelper (>= 9),
+ cmake,
+ libgl1-mesa-dev | libgl-dev,
+ libsdl1.2-dev (>= 1.2.10),
+ libsdl-image1.2-dev,
+ libsdl-ttf2.0-dev,
+ libpng12-dev (>= 1.2),
+ libltdl-dev (>= 2.4.2),
+ libboost-dev,
+ libboost-system-dev,
+ libboost-filesystem-dev,
+ libboost-regex-dev,
+ google-mock,
+ libgtest-dev
+Build-Depends-Indep: doxygen, graphviz
+Standards-Version: 3.9.4
+Homepage: http://colobot.info
+
+Package: colobot
+Architecture: any
+Depends: ${shlibs:Depends},
+ ${misc:Depends},
+ colobot-common (>= ${source:Version})
+Description: educational programming strategy game
+ Colobot (Colonize with Bots) is an educational game aiming to teach
+ programming through entertainment. You are playing as an astronaut on a
+ journey with robot helpers to find a planet for colonization. It features 3D
+ real-time graphics and a C++ and Java-like, object-oriented language, CBOT,
+ which can be used to program the robots available in the game.
+
+Package: colobot-common
+Architecture: all
+Depends: ${misc:Depends}
+Recommends: colobot (>= ${source:Version})
+Description: educational programming strategy game - data
+ Colobot (Colonize with Bots) is an educational game aiming to teach
+ programming through entertainment. You are playing as an astronaut on a
+ journey with robot helpers to find a planet for colonization. It features 3D
+ real-time graphics and a C++ and Java-like, object-oriented language, CBOT,
+ which can be used to program the robots available in the game.
+ .
+ This package contains the architecture-independent game data.
+
+Package: colobot-dev-doc
+Architecture: all
+Section: doc
+Depends: ${misc:Depends},
+ libjs-jquery
+Recommends: colobot (>= ${source:Version})
+Description: educational programming strategy game - source doc
+ Colobot (Colonize with Bots) is an educational game aiming to teach
+ programming through entertainment. You are playing as an astronaut on a
+ journey with robot helpers to find a planet for colonization. It features 3D
+ real-time graphics and a C++ and Java-like, object-oriented language, CBOT,
+ which can be used to program the robots available in the game.
+ .
+ This package contains the doxygen documentation for the colobot source code.
