@@ -1,7 +1,10 @@
 #!/usr/bin/make -f
 
 %:
-	dh $@ --buildsystem=cmake --parallel
+	dh $@ \
+		--buildsystem=cmake \
+		--parallel \
+		--dbg-package=colobot-dbg
 
 override_dh_auto_build:
 	dh_auto_build -a

@@ -47,6 +47,20 @@ Description: educational programming strategy game - data
  .
  This package contains the architecture-independent game data.
 
+Package: colobot-dbg
+Architecture: any
+Section: debug
+Depends: ${misc:Depends}, ${shlibs:Depends},
+ colobot (= ${binary:Version})
+Description: educational programming strategy game - debug symbols
+ Colobot (Colonize with Bots) is an educational game aiming to teach
+ programming through entertainment. You are playing as an astronaut on a
+ journey with robot helpers to find a planet for colonization. It features 3D
+ real-time graphics and a C++ and Java-like, object-oriented language, CBOT,
+ which can be used to program the robots available in the game.
+ .
+ This package contains the debugging symbols.
+
 Package: colobot-dev-doc
 Architecture: all
 Section: doc
