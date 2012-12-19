@@ -50,6 +50,7 @@ Description: educational programming strategy game - data
 Package: colobot-dbg
 Architecture: any
 Section: debug
+Priority: extra
 Depends: ${misc:Depends}, ${shlibs:Depends},
  colobot (= ${binary:Version})
 Description: educational programming strategy game - debug symbols
