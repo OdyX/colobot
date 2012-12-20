@@ -1,0 +1,10 @@
+Document: colobot-source-doc
+Title: Colobot source code documentation
+Author: Polish Portal of Colobot
+Abstract: This is the Doxygen-generated documentation of the Colobot
+ source code.
+Section: Programming
+
+Format: HTML
+Index: /usr/share/doc/colobot/html/index.html
+Files: /usr/share/doc/colobot/html/*.html
