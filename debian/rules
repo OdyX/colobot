@@ -7,7 +7,8 @@
 		--dbg-package=colobot-dbg
 
 override_dh_auto_configure:
-	dh_auto_configure -- -DCMAKE_BUILD_TYPE:STRING="RelWithDebInfo"
+	dh_auto_configure -- -DCMAKE_BUILD_TYPE:STRING="RelWithDebInfo" \
+	                     -DINSTALL_DOCS:BOOL=True
 
 override_dh_auto_build:
 	dh_auto_build -a
