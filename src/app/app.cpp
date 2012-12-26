@@ -40,6 +40,11 @@
 #include <unistd.h>
 
 
+#ifdef OPENAL_SOUND
+    #include "sound/oalsound/alsound.h"
+#endif
+
+
 template<> CApplication* CSingleton<CApplication>::mInstance = nullptr;
 
 //! Static buffer for putenv locale
@@ -89,7 +94,6 @@ CApplication::CApplication()
     m_private       = new ApplicationPrivate();
     m_iMan          = new CInstanceManager();
     m_eventQueue    = new CEventQueue(m_iMan);
-    m_pluginManager = new CPluginManager();
     m_profile       = new CProfile();
 
     m_engine    = nullptr;
@@ -157,9 +161,6 @@ CApplication::~CApplication()
 
     delete m_eventQueue;
     m_eventQueue = nullptr;
-
-    delete m_pluginManager;
-    m_pluginManager = nullptr;
 
     delete m_profile;
     m_profile = nullptr;
@@ -315,7 +316,7 @@ bool CApplication::Create()
     langStr += locale;
     strcpy(S_LANGUAGE, langStr.c_str());
     putenv(S_LANGUAGE);
-    setlocale(LC_ALL, "");
+    setlocale(LC_ALL, locale.c_str());
     GetLogger()->Debug("Set locale to '%s'\n", locale.c_str());
 
     bindtextdomain("colobot", COLOBOT_I18N_DIR);
@@ -323,9 +324,6 @@ bool CApplication::Create()
     textdomain("colobot");
 
     GetLogger()->Debug("Testing gettext translation: '%s'\n", gettext("Colobot rules!"));
-
-    // Temporarily -- only in windowed mode
-    m_deviceConfig.fullScreen = false;
 
     //Create the sound instance.
     if (!GetProfile().InitCurrentDirectory()) {
@@ -336,13 +334,12 @@ bool CApplication::Create()
         if (GetProfile().GetLocalProfileString("Resources", "Data", path))
             m_dataPath = path;
 
-        m_pluginManager->LoadFromProfile();
-        m_sound = static_cast<CSoundInterface*>(CInstanceManager::GetInstancePointer()->SearchInstance(CLASS_SOUND));
-
-        if (!m_sound) {
-            GetLogger()->Error("Sound not loaded, falling back to fake sound!\n");
-            m_sound = new CSoundInterface();
-        }
+	#ifdef OPENAL_SOUND
+	    m_sound = static_cast<CSoundInterface *>(new ALSound());
+	#else
+	    GetLogger()->Info("No sound support.\n");
+	    m_sound = new CSoundInterface();
+	#endif
 
         m_sound->Create(true);
         if (GetProfile().GetLocalProfileString("Resources", "Sound", path))
@@ -383,7 +380,20 @@ bool CApplication::Create()
         m_exitCode = 3;
         return false;
     }
-
+ 
+    // load settings from profile
+    int iValue;
+    if ( GetProfile().GetLocalProfileInt("Setup", "Resolution", iValue) ) {
+	std::vector<Math::IntPoint> modes;
+	GetVideoResolutionList(modes, true, true);
+	if (static_cast<unsigned int>(iValue) < modes.size())
+	    m_deviceConfig.size = modes.at(iValue);
+    }
+    
+    if ( GetProfile().GetLocalProfileInt("Setup", "Fullscreen", iValue) ) {
+	m_deviceConfig.fullScreen = (iValue == 1);
+    }
+    
     if (! CreateVideoSurface())
         return false; // dialog is in function
 
@@ -403,8 +413,7 @@ bool CApplication::Create()
 
     // Don't generate joystick events
     SDL_JoystickEventState(SDL_IGNORE);
-
-
+    
     // The video is ready, we can create and initalize the graphics device
     m_device = new Gfx::CGLDevice(m_deviceConfig);
     if (! m_device->Create() )
