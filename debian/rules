@@ -8,7 +8,8 @@
 
 override_dh_auto_configure:
 	dh_auto_configure -- -DCMAKE_BUILD_TYPE:STRING="RelWithDebInfo" \
-	                     -DINSTALL_DOCS:BOOL=True
+	                     -DINSTALL_DOCS:BOOL=True \
+	                     -DOPENAL_SOUND:BOOL=True
 
 override_dh_auto_build:
 	dh_auto_build -a
