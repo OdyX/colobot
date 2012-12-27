@@ -17,6 +17,9 @@ Build-Depends:
  libboost-regex-dev,
  libopenal-dev,
  libalut-dev,
+ librsvg2-bin,
+ po4a,
+ perl,
  google-mock,
  libgtest-dev
 Build-Depends-Indep: doxygen, graphviz
