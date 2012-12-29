@@ -1,4 +1,4 @@
-colobot (0~git2012121900-1~OdyX0) UNRELEASED; urgency=low
+colobot (0.1.0~pre-alpha-git-dev~re625665-1~OdyX0) UNRELEASED; urgency=low
 
   * Initial release. (Closes: #695829)
 
