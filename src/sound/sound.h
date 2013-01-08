@@ -47,6 +47,7 @@
 **/
 enum Sound
 {
+  SOUND_NONE = -1,  
   SOUND_CLICK = 0,
   SOUND_BOUM  = 1,
   SOUND_EXPLO  = 2,
@@ -168,7 +169,7 @@ class CSoundInterface
      *  Function calls \link CSoundInterface::Cache() \endlink for each file
      */
     inline void CacheAll(std::string path) {
-        for ( int i = 1; i < 69; i++ ) {
+        for ( int i = 1; i <= 81; i++ ) {
             std::stringstream filename;
             filename << path << "/sound" << std::setfill('0') << std::setw(3) << i << ".wav";
             if ( !Cache(static_cast<Sound>(i), filename.str()) )

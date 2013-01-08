@@ -26,6 +26,7 @@
 #include "common/image.h"
 #include "common/key.h"
 
+#include "graphics/engine/modelmanager.h"
 #include "graphics/opengl/gldevice.h"
 
 #include "object/robotmain.h"
@@ -98,6 +99,7 @@ CApplication::CApplication()
 
     m_engine    = nullptr;
     m_device    = nullptr;
+    m_modelManager = nullptr;
     m_robotMain = nullptr;
     m_sound     = nullptr;
 
@@ -125,6 +127,12 @@ CApplication::CApplication()
     m_baseTimeStamp = CreateTimeStamp();
     m_curTimeStamp = CreateTimeStamp();
     m_lastTimeStamp = CreateTimeStamp();
+
+    for (int i = 0; i < PCNT_MAX; ++i)
+    {
+        m_performanceCounters[i][0] = CreateTimeStamp();
+        m_performanceCounters[i][1] = CreateTimeStamp();
+    }
 
     m_joystickEnabled = false;
 
@@ -171,6 +179,12 @@ CApplication::~CApplication()
     DestroyTimeStamp(m_baseTimeStamp);
     DestroyTimeStamp(m_curTimeStamp);
     DestroyTimeStamp(m_lastTimeStamp);
+
+    for (int i = 0; i < PCNT_MAX; ++i)
+    {
+        DestroyTimeStamp(m_performanceCounters[i][0]);
+        DestroyTimeStamp(m_performanceCounters[i][1]);
+    }
 }
 
 ParseArgsStatus CApplication::ParseArguments(int argc, char *argv[])
@@ -400,6 +414,9 @@ bool CApplication::Create()
         return false;
     }
 
+    // Create model manager
+    m_modelManager = new Gfx::CModelManager(m_engine);
+
     // Create the robot application.
     m_robotMain = new CRobotMain(m_iMan, this);
 
@@ -427,8 +444,6 @@ bool CApplication::CreateVideoSurface()
     // Use hardware surface if available
     if (videoInfo->hw_available)
         videoFlags |= SDL_HWSURFACE;
-    else
-        videoFlags |= SDL_SWSURFACE;
 
     // Enable hardware blit if available
     if (videoInfo->blit_hw)
@@ -477,6 +492,12 @@ void CApplication::Destroy()
     {
         delete m_sound;
         m_sound = nullptr;
+    }
+
+    if (m_modelManager != nullptr)
+    {
+        delete m_modelManager;
+        m_modelManager = nullptr;
     }
 
     if (m_engine != nullptr)
@@ -693,6 +714,14 @@ int CApplication::Run()
 
     while (true)
     {
+        ResetPerformanceCounters();
+
+        if (m_active)
+        {
+            StartPerformanceCounter(PCNT_ALL);
+            StartPerformanceCounter(PCNT_EVENT_PROCESSING);
+        }
+
         // To be sure no old event remains
         m_private->currentEvent.type = SDL_NOEVENT;
 
@@ -804,15 +833,38 @@ int CApplication::Run()
                     m_robotMain->EventProcess(event);
             }
 
+            StopPerformanceCounter(PCNT_EVENT_PROCESSING);
+
+            StartPerformanceCounter(PCNT_UPDATE_ALL);
+
+            // Prepare and process step simulation event
+            event = CreateUpdateEvent();
+            if (event.type != EVENT_NULL && m_robotMain != nullptr)
+            {
+                StartPerformanceCounter(PCNT_UPDATE_ENGINE);
+                m_engine->FrameUpdate();
+                StopPerformanceCounter(PCNT_UPDATE_ENGINE);
+
+                m_sound->FrameMove(m_relTime);
+
+                StartPerformanceCounter(PCNT_UPDATE_GAME);
+                m_robotMain->EventProcess(event);
+                StopPerformanceCounter(PCNT_UPDATE_GAME);
+            }
+
+            StopPerformanceCounter(PCNT_UPDATE_ALL);
+
             /* Update mouse position explicitly right before rendering
              * because mouse events are usually way behind */
             UpdateMouse();
 
-            // Update game and render a frame during idle time (no messages are waiting)
+            StartPerformanceCounter(PCNT_RENDER_ALL);
             Render();
+            StopPerformanceCounter(PCNT_RENDER_ALL);
 
-            // Update simulation state
-            StepSimulation();
+            StopPerformanceCounter(PCNT_ALL);
+
+            UpdatePerformanceCountersData();
 
             if (m_lowCPU)
             {
@@ -848,14 +900,14 @@ Event CApplication::ProcessSystemEvent()
     {
         event.type = EVENT_QUIT;
     }
-    /*else if (m_private->currentEvent.type == SDL_VIDEORESIZE)
+    else if (m_private->currentEvent.type == SDL_VIDEORESIZE)
     {
         Gfx::GLDeviceConfig newConfig = m_deviceConfig;
         newConfig.size.x = m_private->currentEvent.resize.w;
         newConfig.size.y = m_private->currentEvent.resize.h;
         if (newConfig.size != m_deviceConfig.size)
             ChangeVideoConfig(newConfig);
-    }*/
+    }
     else if ( (m_private->currentEvent.type == SDL_KEYDOWN) ||
               (m_private->currentEvent.type == SDL_KEYUP) )
     {
@@ -1142,10 +1194,10 @@ void CApplication::SetSimulationSpeed(float speed)
     GetLogger()->Info("Simulation speed = %.2f\n", speed);
 }
 
-void CApplication::StepSimulation()
+Event CApplication::CreateUpdateEvent()
 {
     if (m_simulationSuspended)
-        return;
+        return Event(EVENT_NULL);
 
     CopyTimeStamp(m_lastTimeStamp, m_curTimeStamp);
     GetCurrentTimeStamp(m_curTimeStamp);
@@ -1160,11 +1212,6 @@ void CApplication::StepSimulation()
     m_exactRelTime = m_simulationSpeed * m_realRelTime;
     m_relTime = (m_simulationSpeed * m_realRelTime) / 1e9f;
 
-
-    m_engine->FrameUpdate();
-    m_sound->FrameMove(m_relTime);
-
-
     Event frameEvent(EVENT_FRAME);
     frameEvent.systemEvent = true;
     frameEvent.trackedKeysState = m_trackedKeys;
@@ -1172,7 +1219,8 @@ void CApplication::StepSimulation()
     frameEvent.mousePos = m_mousePos;
     frameEvent.mouseButtonsState = m_mouseButtonsState;
     frameEvent.rTime = m_relTime;
-    m_eventQueue->AddEvent(frameEvent);
+
+    return frameEvent;
 }
 
 float CApplication::GetSimulationSpeed()
@@ -1472,7 +1520,16 @@ void CApplication::SetLanguage(Language language)
     if (locale.empty())
     {
         char *envLang = getenv("LANGUAGE");
-        if (strncmp(envLang,"en",2) == 0)
+        if (envLang == NULL)
+        {
+            envLang = getenv("LANG");
+        }
+        if (envLang == NULL)
+        {
+            GetLogger()->Error("Failed to get language from environment, setting default language");
+            m_language = LANGUAGE_ENGLISH;
+        }
+        else if (strncmp(envLang,"en",2) == 0)
         {
            m_language = LANGUAGE_ENGLISH;
         }
@@ -1484,7 +1541,7 @@ void CApplication::SetLanguage(Language language)
         {
            m_language = LANGUAGE_FRENCH;
         }
-        else if (strncmp(envLang,"po",2) == 0)
+        else if (strncmp(envLang,"pl",2) == 0)
         {
            m_language = LANGUAGE_POLISH;
         }
@@ -1516,3 +1573,43 @@ bool CApplication::GetLowCPU()
 {
     return m_lowCPU;
 }
+
+void CApplication::StartPerformanceCounter(PerformanceCounter counter)
+{
+    GetCurrentTimeStamp(m_performanceCounters[counter][0]);
+}
+
+void CApplication::StopPerformanceCounter(PerformanceCounter counter)
+{
+    GetCurrentTimeStamp(m_performanceCounters[counter][1]);
+}
+
+float CApplication::GetPerformanceCounterData(PerformanceCounter counter)
+{
+    return m_performanceCountersData[counter];
+}
+
+void CApplication::ResetPerformanceCounters()
+{
+    for (int i = 0; i < PCNT_MAX; ++i)
+    {
+        StartPerformanceCounter(static_cast<PerformanceCounter>(i));
+        StopPerformanceCounter(static_cast<PerformanceCounter>(i));
+    }
+}
+
+void CApplication::UpdatePerformanceCountersData()
+{
+    long long sum = TimeStampExactDiff(m_performanceCounters[PCNT_ALL][0],
+                                       m_performanceCounters[PCNT_ALL][1]);
+
+    for (int i = 0; i < PCNT_MAX; ++i)
+    {
+        long long diff = TimeStampExactDiff(m_performanceCounters[i][0],
+                                            m_performanceCounters[i][1]);
+
+        m_performanceCountersData[static_cast<PerformanceCounter>(i)] =
+            static_cast<float>(diff) / static_cast<float>(sum);
+    }
+}
+

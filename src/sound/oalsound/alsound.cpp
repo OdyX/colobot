@@ -49,9 +49,14 @@ void ALSound::CleanUp()
     if (mEnabled) {
         GetLogger()->Info("Unloading files and closing device...\n");
         StopAll();
+	
+	for (auto channel : mChannels) {
+	    delete channel.second;
+	}
 
-        for (auto item : mSounds)
+        for (auto item : mSounds) {
             delete item.second;
+	}
 
         mEnabled = false;
         alutExit();
@@ -213,7 +218,7 @@ bool ALSound::SearchFreeBuffer(Sound sound, int &channel, bool &bAlreadyLoaded)
 
         it.second->SetPriority(priority);
         channel = it.first;
-        bAlreadyLoaded = true;
+        bAlreadyLoaded = it.second->IsLoaded();
         return true;
     }
 
@@ -296,24 +301,31 @@ int ALSound::Play(Sound sound, Math::Vector pos, float amplitude, float frequenc
         GetLogger()->Warn("Sound %d was not loaded!\n", sound);
         return -1;
     }
+       
+    GetLogger()->Trace("ALSound::Play sound: %d volume: %f frequency: %f\n", sound, amplitude, frequency);
 
     int channel;
     bool bAlreadyLoaded;
     if (!SearchFreeBuffer(sound, channel, bAlreadyLoaded))
         return -1;
-    if ( !bAlreadyLoaded ) {
-        mChannels[channel]->SetBuffer(mSounds[sound]);
+    
+    bAlreadyLoaded = false;
+    if (!bAlreadyLoaded) {
+        if (!mChannels[channel]->SetBuffer(mSounds[sound])) {
+	    GetLogger()->Trace("ALSound::Play SetBuffer failed\n");
+	    return -1;
+	}
     }
 
     Position(channel, pos);
 
     // setting initial values
-    mChannels[channel]->SetStartAmplitude(amplitude);
+    mChannels[channel]->SetStartAmplitude(mAudioVolume);
     mChannels[channel]->SetStartFrequency(frequency);
     mChannels[channel]->SetChangeFrequency(1.0f);
     mChannels[channel]->ResetOper();
-    mChannels[channel]->AdjustFrequency(frequency);
-    mChannels[channel]->AdjustVolume(mAudioVolume);
+    mChannels[channel]->AdjustFrequency(frequency);    
+    mChannels[channel]->AdjustVolume(amplitude * mAudioVolume);
     mChannels[channel]->Play();
     return channel;
 }
@@ -451,17 +463,17 @@ void ALSound::FrameMove(float delta)
         it.second->AdjustVolume(volume * mAudioVolume);
 
         // setting frequency
-        frequency = progress * (oper.finalFrequency - it.second->GetStartFrequency()) * it.second->GetStartFrequency() * it.second->GetChangeFrequency();
+        frequency = progress * abs(oper.finalFrequency - it.second->GetStartFrequency()) * it.second->GetStartFrequency() * it.second->GetChangeFrequency();
         it.second->AdjustFrequency(frequency);
 
         if (it.second->GetEnvelope().totalTime <= it.second->GetCurrentTime()) {
 
             if (oper.nextOper == SOPER_LOOP) {
-                GetLogger()->Trace("Sound oper: replay.\n");
+                GetLogger()->Trace("ALSound::FrameMove oper: replay.\n");
                 it.second->SetCurrentTime(0.0f);
                 it.second->Play();
             } else {
-                GetLogger()->Trace("Sound oper: next.\n");
+                GetLogger()->Trace("ALSound::FrameMove oper: next.\n");
                 it.second->SetStartAmplitude(oper.finalAmplitude);
                 it.second->SetStartFrequency(oper.finalFrequency);
                 it.second->PopEnvelope();
