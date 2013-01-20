@@ -34,12 +34,15 @@ Channel::Channel() {
     mBuffer = nullptr;
     mLoop = false;
     mInitFrequency = 0.0f;
+    mStartAmplitude = 0.0f;
+    mStartFrequency = 0.0f;
+    mChangeFrequency = 0.0f;
 }
 
 
 Channel::~Channel() {
     if (mReady) {
-	alSourceStop(mSource);
+        alSourceStop(mSource);
         alSourcei(mSource, AL_BUFFER, 0);
         alDeleteSources(1, &mSource);
         if (alCheck())
@@ -51,7 +54,7 @@ Channel::~Channel() {
 bool Channel::Play() {
     if (!mReady || mBuffer == nullptr)
         return false;
-    
+
     alSourcei(mSource, AL_LOOPING, static_cast<ALint>(mLoop));
     alSourcePlay(mSource);
     if (alCheck())
@@ -220,11 +223,12 @@ Sound Channel::GetSoundType() {
 bool Channel::SetBuffer(Buffer *buffer) {
     if (!mReady)
         return false;
-    
+
+    Stop();    
     mBuffer = buffer;
     if (buffer == nullptr) {
-	alSourcei(mSource, AL_BUFFER, 0);
-	return true;
+        alSourcei(mSource, AL_BUFFER, 0);
+        return true;
     }    
     
     alSourcei(mSource, AL_BUFFER, buffer->GetBuffer());
@@ -237,10 +241,26 @@ bool Channel::SetBuffer(Buffer *buffer) {
 }
 
 
+bool Channel::FreeBuffer() {
+    if (!mReady)
+        return false;
+    
+    if (!mBuffer) {
+        return false;
+    }
+
+    alSourceStop(mSource);
+    alSourcei(mSource, AL_BUFFER, 0);
+    delete mBuffer;
+    mBuffer = nullptr;
+    return true;
+}
+
+
 bool Channel::IsPlaying() {
     ALint status;
     if (!mReady || mBuffer == nullptr)
-	return false;
+        return false;
     
     alGetSourcei(mSource, AL_SOURCE_STATE, &status);
     if (alCheck()) {
@@ -257,13 +277,13 @@ bool Channel::IsReady() {
 }
 
 bool Channel::IsLoaded() {
-    return mBuffer == nullptr;
+    return mBuffer != nullptr;
 }
 
 
 bool Channel::Stop() {
     if (!mReady || mBuffer == nullptr)
-	return false;
+        return false;
     
     alSourceStop(mSource);
     if (alCheck()) {
@@ -277,7 +297,7 @@ bool Channel::Stop() {
 float Channel::GetCurrentTime()
 {
     if (!mReady || mBuffer == nullptr)
-	return 0.0f;
+        return 0.0f;
     
     ALfloat current;
     alGetSourcef(mSource, AL_SEC_OFFSET, &current);
@@ -292,7 +312,7 @@ float Channel::GetCurrentTime()
 void Channel::SetCurrentTime(float current)
 {
     if (!mReady || mBuffer == nullptr)
-	return;
+        return;
     
     alSourcef(mSource, AL_SEC_OFFSET, current);
     if (alCheck())
@@ -303,7 +323,7 @@ void Channel::SetCurrentTime(float current)
 float Channel::GetDuration()
 {
     if (!mReady || mBuffer == nullptr)
-	return 0.0f;
+        return 0.0f;
     
     return mBuffer->GetDuration();
 }

@@ -4676,6 +4676,7 @@ void CMainDialog::UpdateSceneChap(int &chap)
     {
         j = 0;
         fs::directory_iterator dirIt(m_savegameDir), dirEndIt;
+        m_userList.clear();
 
         BOOST_FOREACH (const fs::path & p, std::make_pair(dirIt, dirEndIt))
         {
@@ -5458,10 +5459,8 @@ void CMainDialog::ChangeSetupButtons()
     ps = static_cast<CSlider*>(pw->SearchControl(EVENT_INTERFACE_VOLMUSIC));
     if ( ps != 0 )
     {
-        /*
-        TODO: midi volume
         value = ps->GetVisibleValue();
-        m_sound->SetMidiVolume((int)value);*/
+        m_sound->SetMusicVolume(static_cast<int>(value));
     }
 }
 

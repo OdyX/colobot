@@ -52,7 +52,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
         COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
     if (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
         message(STATUS "Detected GCC version 4.7+")
-        set(CXX11_FLAGS "-std=c++11")
+        set(CXX11_FLAGS "-std=gnu++11")
     elseif (GCC_VERSION VERSION_GREATER 4.6 OR GCC_VERSION VERSION_EQUAL 4.6)
         message(STATUS "Detected GCC version 4.6+")
         set(CXX11_FLAGS "-std=c++0x")
@@ -112,6 +112,8 @@ find_package(Boost COMPONENTS system filesystem regex REQUIRED)
 option(GLEW_STATIC "Link statically with GLEW" OFF)
 
 find_package(GLEW REQUIRED)
+
+include("${colobot_SOURCE_DIR}/cmake/FindLibSndFile.cmake")
 
 
 ##
