@@ -17,7 +17,7 @@ Build-Depends:
  libboost-filesystem-dev,
  libboost-regex-dev,
  libopenal-dev,
- libalut-dev,
+ libsndfile-dev,
  librsvg2-bin,
  po4a,
  perl,
