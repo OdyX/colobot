@@ -15,8 +15,6 @@
 // * You should have received a copy of the GNU General Public License
 // * along with this program. If not, see  http://www.gnu.org/licenses/.
 
-// alsound.cpp
-
 
 #include "alsound.h"
 
@@ -29,18 +27,12 @@ ALSound::ALSound()
     mAudioVolume = 1.0f;
     mMusicVolume = 1.0f;
     mMute = false;
-    mCurrentMusic = nullptr;    
-    auto pointer = CInstanceManager::GetInstancePointer();
-    if (pointer != nullptr)
-        CInstanceManager::GetInstancePointer()->AddInstance(CLASS_SOUND, this);
+    mCurrentMusic = nullptr;
 }
 
 
 ALSound::~ALSound()
 {
-    auto pointer = CInstanceManager::GetInstancePointer();
-    if (pointer != nullptr)
-        CInstanceManager::GetInstancePointer()->DeleteInstance(CLASS_SOUND, this);
     CleanUp();
 }
 
@@ -394,7 +386,8 @@ bool ALSound::Frequency(int channel, float frequency)
         return false;
     }
 
-    mChannels[channel]->SetFrequency(frequency);
+    mChannels[channel]->SetFrequency(frequency * mChannels[channel]->GetInitFrequency());
+    mChannels[channel]->SetChangeFrequency(frequency);
     return true;
 }
 
@@ -469,11 +462,13 @@ void ALSound::FrameMove(float delta)
        
         // setting volume
         volume = progress * (oper.finalAmplitude - it.second->GetStartAmplitude());
-        it.second->SetVolume((volume + it.second->GetStartAmplitude()) * mAudioVolume);
+        volume = (volume + it.second->GetStartAmplitude()) * mAudioVolume;
+        it.second->SetVolume(volume);
 
         // setting frequency
         frequency = progress * (oper.finalFrequency - it.second->GetStartFrequency()) * it.second->GetStartFrequency() * it.second->GetChangeFrequency() * it.second->GetInitFrequency();
         it.second->AdjustFrequency(frequency);
+        GetLogger()->Error("%f\n", frequency);
 
         if (oper.totalTime <= oper.currentTime) {
             if (oper.nextOper == SOPER_LOOP) {

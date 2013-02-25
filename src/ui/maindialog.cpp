@@ -14,22 +14,24 @@
 // * You should have received a copy of the GNU General Public License
 // * along with this program. If not, see  http://www.gnu.org/licenses/.
 
-// maindialog.cpp
 
 #include "ui/maindialog.h"
 
 #include "app/app.h"
+
 #include "common/global.h"
 #include "common/event.h"
 #include "common/logger.h"
 #include "common/misc.h"
 #include "common/profile.h"
-#include "common/iman.h"
 #include "common/restext.h"
 #include "common/logger.h"
+
 #include "object/robotmain.h"
+
 #include "script/cmdtoken.h"
 #include "sound/sound.h"
+
 #include "ui/interface.h"
 #include "ui/button.h"
 #include "ui/color.h"
@@ -54,8 +56,7 @@
 
 //TODO Get rid of all sprintf's
 
-namespace Ui
-{
+namespace Ui {
 
 const int KEY_VISIBLE = 6;      // number of visible keys redefinable
 
@@ -106,20 +107,16 @@ namespace fs = boost::filesystem;
 
 // Constructor of robot application.
 
-CMainDialog::CMainDialog(CInstanceManager* iMan)
+CMainDialog::CMainDialog()
 {
-    m_iMan = iMan;
-    m_iMan->AddInstance(CLASS_DIALOG, this);
-
-    m_app = CApplication::GetInstancePointer();
-
-    m_main       = static_cast<CRobotMain*>(m_iMan->SearchInstance(CLASS_MAIN));
-    m_interface  = static_cast<CInterface*>(m_iMan->SearchInstance(CLASS_INTERFACE));
-    m_eventQueue = static_cast<CEventQueue*>(m_iMan->SearchInstance(CLASS_EVENT));
-    m_engine     = static_cast<Gfx::CEngine*>(m_iMan->SearchInstance(CLASS_ENGINE));
-    m_particle   = static_cast<Gfx::CParticle*>(m_iMan->SearchInstance(CLASS_PARTICULE));
-    m_camera     = static_cast<Gfx::CCamera*>(m_iMan->SearchInstance(CLASS_CAMERA));
-    m_sound      = static_cast<CSoundInterface*>(m_iMan->SearchInstance(CLASS_SOUND));
+    m_app        = CApplication::GetInstancePointer();
+    m_eventQueue = m_app->GetEventQueue();
+    m_sound      = m_app->GetSound();
+    m_main       = CRobotMain::GetInstancePointer();
+    m_interface  = m_main->GetInterface();
+    m_camera     = m_main->GetCamera();
+    m_engine     = Gfx::CEngine::GetInstancePointer();
+    m_particle   = m_engine->GetParticle();
 
     m_phase        = PHASE_NAME;
     m_phaseSetup   = PHASE_SETUPg;
@@ -1761,9 +1758,6 @@ pos.y -= 0.048f;
     }
     if ( m_phase == PHASE_WELCOME2 )
     {
-        m_sound->StopMusic();
-        m_sound->PlayMusic(11, false);
-
         pos.x  = 0.0f;
         pos.y  = 0.0f;
         ddim.x = 0.0f;
@@ -1972,8 +1966,8 @@ ddim.y =   9.0f/480.0f;
         ddim.x =  90.0f/640.0f;
         ddim.y =  10.0f/480.0f;
         //#endif
-        GetResource(RES_TEXT, RT_VERSION_ID, name);
-        pl = pw->CreateLabel(pos, ddim, 0, EVENT_LABEL1, name);
+        //GetResource(RES_TEXT, RT_VERSION_ID, name);
+        pl = pw->CreateLabel(pos, ddim, 0, EVENT_LABEL1, __DATE__);
         pl->SetFontType(Gfx::FONT_COURIER);
         pl->SetFontSize(9.0f);
     }

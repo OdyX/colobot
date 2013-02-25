@@ -14,7 +14,6 @@
 // * You should have received a copy of the GNU General Public License
 // * along with this program. If not, see  http://www.gnu.org/licenses/.
 
-// channel.cpp
 
 #include "channel.h"
 
@@ -95,7 +94,7 @@ bool Channel::AdjustFrequency(float freq)
     if (!mReady || mBuffer == nullptr)
         return false;
 
-    return SetFrequency(mInitFrequency - freq);
+    return SetFrequency(mInitFrequency + freq);
 }
 
 
@@ -120,7 +119,7 @@ bool Channel::SetVolume(float vol)
     if (!mReady || vol < 0 || mBuffer == nullptr)
         return false;
     
-    alSourcef(mSource, AL_GAIN, MIN(vol, 1.0f));
+    alSourcef(mSource, AL_GAIN, MIN(powf(vol, 0.2f), 1.0f));
     if (alCheck()) {
         GetLogger()->Warn("Could not set sound volume to '%f'. Code: %d\n", vol, alGetCode());
         return false;
