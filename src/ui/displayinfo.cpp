@@ -381,7 +381,7 @@ void CDisplayInfo::StartDisplayInfo(std::string filename, int index, bool bSoluc
     edit->ReadText(filename.c_str());
     edit->HyperHome(filename.c_str());
     edit->SetEditCap(false);  // just to see!
-    edit->SetHiliteCap(false);
+    edit->SetHighlightCap(false);
     edit->SetFocus(true);
 
     ViewDisplayInfo();
@@ -455,6 +455,7 @@ void CDisplayInfo::StartDisplayInfo(std::string filename, int index, bool bSoluc
     }
 
     light.type    = Gfx::LIGHT_DIRECTIONAL;
+    light.ambient = Gfx::Color(0.0f, 0.0f, 0.0f);
     light.diffuse = Gfx::Color(1.0f, 0.1f, 0.1f);
     light.direction  = Math::Vector(1.0f, 0.0f, 1.0f);
 
@@ -670,7 +671,7 @@ void CDisplayInfo::ChangeIndexButton(int index)
     {
         filename = m_main->GetDisplayInfoName(m_index);
         edit->ReadText(filename);
-        edit->HyperHome(filename);
+        edit->HyperHome(std::string(filename));
         SetPosition(m_main->GetDisplayInfoPosition(m_index));
     }
 
@@ -784,7 +785,7 @@ void CDisplayInfo::UpdateIndexButton()
     if ( edit != 0 )
     {
 //?     edit->SetHiliteCap(m_index==SATCOM_LOADING);
-        edit->SetHiliteCap(true);
+        edit->SetHighlightCap(true);
     }
 
     UpdateCopyButton();

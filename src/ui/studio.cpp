@@ -990,13 +990,13 @@ void CStudio::UpdateButtons()
     {
         edit->SetIcon(1);  // red background
         edit->SetEditCap(false);  // just to see
-        edit->SetHiliteCap(true);
+        edit->SetHighlightCap(true);
     }
     else
     {
         edit->SetIcon(0);  // standard background
         edit->SetEditCap(true);
-        edit->SetHiliteCap(true);
+        edit->SetHighlightCap(true);
     }
 
     button = static_cast< CButton* >(pw->SearchControl(EVENT_STUDIO_COMPILE));
@@ -1477,8 +1477,7 @@ void CStudio::UpdateDialogPublic()
     CCheck*     pc;
     CLabel*     pl;
     char        name[100];
-    char        dir[MAX_FNAME];
-    char        text[MAX_FNAME+100];
+    //char        text[MAX_FNAME+100];
 
     pw = static_cast< CWindow* >(m_interface->SearchControl(EVENT_WINDOW9));
     if ( pw == nullptr )  return;
@@ -1499,9 +1498,7 @@ void CStudio::UpdateDialogPublic()
     if ( pl != 0 )
     {
         GetResource(RES_TEXT, RT_IO_LIST, name);
-        SearchDirectory(dir, false);
-        sprintf(text, name, dir);
-        pl->SetName(text, false);
+        pl->SetName(SearchDirectory(false).c_str(), false);
     }
 }
 
@@ -1509,84 +1506,52 @@ void CStudio::UpdateDialogPublic()
 
 void CStudio::UpdateDialogList()
 {
-    // TODO rewrite to multiplatform
-    /*CWindow*            pw;
-    CList*              pl;
-    long                hFile;
-    struct _finddata_t  fileBuffer;
-    struct _finddata_t* listBuffer;
-    bool                bDo;
-    char                dir[MAX_FNAME];
-    char                temp[MAX_FNAME];
-    int                 nbFilenames, i;
+    CWindow*        pw;
+    CList*          pl;
+    fs::path        path;
+    int             i = 0;
+    char            time[100];
+    char            temp[100];
 
-    pw = static_cast< CWindow* >(m_interface->SearchControl(EVENT_WINDOW9);
+    pw = static_cast< CWindow* >(m_interface->SearchControl(EVENT_WINDOW9));
     if ( pw == nullptr )  return;
-    pl = static_cast< CList* >(pw->SearchControl(EVENT_DIALOG_LIST);
-    if ( pl == 0 )  return;
+    pl = static_cast< CList* >(pw->SearchControl(EVENT_DIALOG_LIST));
+    if ( pl == nullptr )  return;
     pl->Flush();
 
-    nbFilenames = 0;
-    listBuffer = (_finddata_t*)malloc(sizeof(_finddata_t)*1000);
-
-    SearchDirectory(dir, false);
-    strcat(dir, "*");  // list all
-    hFile = _findfirst(dir, &fileBuffer);
-    if ( hFile != -1 )
-    {
-        do
-        {
-            if ( (fileBuffer.attrib & _A_SUBDIR) == 0 )
-            {
-                listBuffer[nbFilenames++] = fileBuffer;
-            }
-        }
-        while ( _findnext(hFile, &fileBuffer) == 0 && nbFilenames < 1000 );
-    }
-    do  // sorts all names:
-    {
-        bDo = false;
-        for ( i=0 ; i<nbFilenames-1 ; i++ )
-        {
-            if ( strcmp(listBuffer[i].name, listBuffer[i+1].name) > 0 )
-            {
-                fileBuffer = listBuffer[i];  // exchange i and i +1
-                listBuffer[i] = listBuffer[i+1];
-                listBuffer[i+1] = fileBuffer;
-                bDo = true;
+    path = fs::path(SearchDirectory(false));
+    fs::directory_iterator end_iter;
+    if ( fs::exists(path) && fs::is_directory(path) ) {
+        for( fs::directory_iterator file(path); file != end_iter; file++) {
+            if (fs::is_regular_file(file->status()) ) {
+                TimeToAscii(fs::last_write_time(file->path()), time);
+                sprintf(temp, "%s\t%lu  \t%s", file->path().filename().string().c_str(), fs::file_size(file->path()), time);
+                
+                pl->SetName(i++, temp);
             }
         }
     }
-    while ( bDo );
-
-    for ( i=0 ; i<nbFilenames ; i++ )
-    {
-        TimeToAscii(listBuffer[i].time_write, dir);
-        sprintf(temp, "%s\t%d  \t%s", listBuffer[i].name, listBuffer[i].size, dir);
-        pl->SetName(i, temp);
-    }
-
-    free(listBuffer);*/
 }
 
 // Constructs the name of the folder or open/save.
 // If the folder does not exist, it will be created.
 
-void CStudio::SearchDirectory(char *dir, bool bCreate)
+std::string CStudio::SearchDirectory(bool bCreate)
 {
-    if ( m_main->GetIOPublic() )
-    {
-        sprintf(dir, "%s\\", m_main->GetPublicDir());
+    char dir[MAX_FNAME];
+    if ( m_main->GetIOPublic() ) {
+        sprintf(dir, "%s/", m_main->GetPublicDir());
+    } else {
+        sprintf(dir, "%s/%s/Program/", m_main->GetSavegameDir(), m_main->GetGamerName());
     }
-    else
-    {
-        sprintf(dir, "%s\\%s\\Program\\", m_main->GetSavegameDir(), m_main->GetGamerName());
+    
+    fs::path path = fs::path(dir);
+    
+    if ( bCreate ) {
+        fs::create_directory(path);
     }
 
-    if ( bCreate )
-    {// TODO
-//        mkdir(dir,0777);  // if does not exist yet!
-    }
+    return path.make_preferred().string();
 }
 
 // Reads a new program.
@@ -1612,7 +1577,7 @@ bool CStudio::ReadProgram()
     {
         strcat(filename, ".txt");
     }
-    SearchDirectory(dir, true);
+    strcpy(dir, SearchDirectory(true).c_str());
     strcat(dir, filename);
 
     pw = static_cast< CWindow* >(m_interface->SearchControl(EVENT_WINDOW3));
@@ -1650,7 +1615,7 @@ bool CStudio::WriteProgram()
     {
         strcat(filename, ".txt");
     }
-    SearchDirectory(dir, true);
+    strcpy(dir, SearchDirectory(true).c_str());
     strcat(dir, filename);
 
     pw = static_cast< CWindow* >(m_interface->SearchControl(EVENT_WINDOW3));
@@ -1658,7 +1623,7 @@ bool CStudio::WriteProgram()
     pe = static_cast< CEdit* >(pw->SearchControl(EVENT_STUDIO_EDIT));
     if ( pe == nullptr )  return false;
 
-    if ( !pe->WriteText(dir) )  return false;
+    if ( !pe->WriteText(std::string(dir)) )  return false;
 
     m_script->SetFilename(filename);
     return true;

@@ -745,6 +745,10 @@ pb->SetState(STATE_SHADOW);
             m_phase == PHASE_USER    ||
             m_phase == PHASE_PROTO   )
     {
+        if (!m_sound->IsPlayingMusic()) {
+            m_sound->PlayMusic(11, true);
+        }
+            
         if ( m_phase == PHASE_TRAINER )  m_index = 0;
         if ( m_phase == PHASE_DEFI    )  m_index = 1;
         if ( m_phase == PHASE_MISSION )  m_index = 2;
@@ -887,7 +891,7 @@ pb->SetState(STATE_SHADOW);
         pe->SetState(STATE_SHADOW);
         pe->SetMaxChar(500);
         pe->SetEditCap(false);  // just to see
-        pe->SetHiliteCap(false);
+        pe->SetHighlightCap(false);
 
         // Button displays the "soluce":
         if ( m_phase != PHASE_TRAINER &&
@@ -1811,7 +1815,7 @@ pos.y -= 0.048f;
         pe = pw->CreateEdit(pos, ddim, 0, EVENT_EDIT1);
         pe->SetGenericMode(true);
         pe->SetEditCap(false);
-        pe->SetHiliteCap(false);
+        pe->SetHighlightCap(false);
         pe->SetFontType(Gfx::FONT_COURIER);
         pe->SetFontSize(8.0f);
         pe->ReadText("help/authors.txt");
@@ -1823,7 +1827,7 @@ pos.y -= 0.048f;
         pe = pw->CreateEdit(pos, ddim, 0, EVENT_EDIT2);
         pe->SetGenericMode(true);
         pe->SetEditCap(false);
-        pe->SetHiliteCap(false);
+        pe->SetHighlightCap(false);
         pe->SetFontType(Gfx::FONT_COURIER);
         pe->SetFontSize(6.5f);
         pe->ReadText("help/licences.txt");
@@ -1843,7 +1847,7 @@ ddim.y = 150.0f/480.0f;
         pe = pw->CreateEdit(pos, ddim, 0, EVENT_EDIT1);
         pe->SetGenericMode(true);
         pe->SetEditCap(false);
-        pe->SetHiliteCap(false);
+        pe->SetHighlightCap(false);
         pe->SetFontType(Gfx::FONT_COURIER);
         pe->SetFontSize(8.0f);
         pe->ReadText("help/authors.txt");
@@ -1876,7 +1880,7 @@ ddim.y = 150.0f/480.0f;
 
         // TODO: #if !_DEMO
         pos.x  =  40.0f/640.0f;
-        pos.y  =  83.0f/480.0f;
+        pos.y  =  65.0f/480.0f;
         ddim.x = 246.0f/640.0f;
         ddim.y =  16.0f/480.0f;
         GetResource(RES_TEXT, RT_GENERIC_DEV1, name);
@@ -1884,14 +1888,14 @@ ddim.y = 150.0f/480.0f;
         pl->SetFontType(Gfx::FONT_COURIER);
         pl->SetFontSize(8.0f);
 
-        pos.y  =  13.0f/480.0f;
+        pos.y  =  0.0f/480.0f;
         GetResource(RES_TEXT, RT_GENERIC_DEV2, name);
         pl = pw->CreateLabel(pos, ddim, 0, EVENT_LABEL2, name);
         pl->SetFontType(Gfx::FONT_COURIER);
         pl->SetFontSize(8.0f);
 
         pos.x  = 355.0f/640.0f;
-        pos.y  =  83.0f/480.0f;
+        pos.y  =  65.0f/480.0f;
         ddim.x = 246.0f/640.0f;
         ddim.y =  16.0f/480.0f;
         GetResource(RES_TEXT, RT_GENERIC_EDIT1, name);
@@ -1899,7 +1903,7 @@ ddim.y = 150.0f/480.0f;
         pl->SetFontType(Gfx::FONT_COURIER);
         pl->SetFontSize(8.0f);
 
-        pos.y  =  13.0f/480.0f;
+        pos.y  =  0.0f/480.0f;
         GetResource(RES_TEXT, RT_GENERIC_EDIT2, name);
         pl = pw->CreateLabel(pos, ddim, 0, EVENT_LABEL4, name);
         pl->SetFontType(Gfx::FONT_COURIER);
@@ -3555,11 +3559,11 @@ void CMainDialog::SetUserDir(char *base, int rank)
     if ( strcmp(base, "user") == 0 && rank >= 100 )
     {
         dir = m_userDir + "/" + m_userList.at(rank/100-1);
-        UserDir(true, dir.c_str());
+        GetProfile().SetUserDir(dir);
     }
     else
     {
-        UserDir(false, "");
+        GetProfile().SetUserDir("");
     }
 }
 
@@ -4254,7 +4258,6 @@ bool CMainDialog::IsIOReadScene()
     FILE*   file;
     std::string filename;
 
-    //TODO: Change this to point user dir acocrding to operating system
     filename = m_savegameDir + "/" + m_main->GetGamerName() + "/" + "save" + m_sceneName[0] + "000/data.sav";
     file = fopen(filename.c_str(), "r");
     if ( file == NULL )  return false;
@@ -4350,7 +4353,7 @@ void CMainDialog::IOReadList()
         filename = m_savegameDir + "/" + m_main->GetGamerName() + "/save" + m_sceneName[0] + rankStream.str()+ "/data.sav";
 
         // sprintf(filename, "%s\\%s\\save%c%.3d\\data.sav", m_savegameDir, m_main->GetGamerName(), m_sceneName[0], j);
-        file = fopen(filename.c_str(), "r");
+        file = fopen(fs::path(filename).make_preferred().string().c_str(), "r");
         if ( file == NULL )  break;
 
         while ( fgets(line, 500, file) != NULL )
@@ -5042,8 +5045,8 @@ void CMainDialog::UpdateDisplayDevice()
     CWindow*    pw;
     CList*      pl;
     char        bufDevices[1000];
-    char        bufModes[5000];
-    int         i, j, totalDevices, selectDevices, totalModes, selectModes;
+    //char        bufModes[5000];
+    int         i, j;
 
     pw = static_cast<CWindow*>(m_interface->SearchControl(EVENT_WINDOW5));
     if ( pw == 0 )  return;
@@ -5051,7 +5054,7 @@ void CMainDialog::UpdateDisplayDevice()
     if ( pl == 0 )  return;
     pl->Flush();
 
-    bufModes[0] = 0;
+    //bufModes[0] = 0;
     /* TODO: remove device choice
     m_engine->EnumDevices(bufDevices, 1000,
                           bufModes,   5000,
@@ -5066,10 +5069,10 @@ void CMainDialog::UpdateDisplayDevice()
         while ( bufDevices[i++] != 0 );
     }
 
-    pl->SetSelect(selectDevices);
+    pl->SetSelect(0);
     pl->ShowSelect(false);
 
-    m_setupSelDevice = selectDevices;
+    m_setupSelDevice = 0;
 }
 
 // Updates the list of modes.
@@ -5106,8 +5109,8 @@ void CMainDialog::ChangeDisplay()
     CWindow*    pw;
     CList*      pl;
     CCheck*     pc;
-    char*       device;
-    char*       mode;
+    //char*       device;
+    //char*       mode;
     bool        bFull;
 
     pw = static_cast<CWindow*>(m_interface->SearchControl(EVENT_WINDOW5));
@@ -5116,12 +5119,12 @@ void CMainDialog::ChangeDisplay()
     pl = static_cast<CList*>(pw->SearchControl(EVENT_LIST1));
     if ( pl == 0 )  return;
     m_setupSelDevice = pl->GetSelect();
-    device = pl->GetName(m_setupSelDevice);
+    //device = pl->GetName(m_setupSelDevice);
 
     pl = static_cast<CList*>(pw->SearchControl(EVENT_LIST2));
     if ( pl == 0 )  return;
     m_setupSelMode = pl->GetSelect();
-    mode = pl->GetName(m_setupSelMode);
+    //mode = pl->GetName(m_setupSelMode);
 
     pc = static_cast<CCheck*>(pw->SearchControl(EVENT_INTERFACE_FULL));
     if ( pc == 0 )  return;

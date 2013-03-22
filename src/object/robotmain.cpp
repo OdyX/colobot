@@ -661,7 +661,11 @@ CRobotMain::CRobotMain(CApplication* app)
     m_showPos      = false;
     m_selectInsect = false;
     m_showSoluce   = false;
+    #ifdef NDEBUG
+    m_showAll      = false;
+    #else
     m_showAll      = true; // for development
+    #endif
     m_cheatRadar   = false;
     m_fixScene     = false;
     m_trainerPilot = false;
@@ -1142,6 +1146,7 @@ void CRobotMain::ChangePhase(Phase phase)
 
     if (m_phase == PHASE_WIN)
     {
+        m_sound->StopAll();
         if (m_endingWinRank == -1)
         {
             ChangePhase(PHASE_TERM);
@@ -1181,20 +1186,20 @@ void CRobotMain::ChangePhase(Phase phase)
                 pe->SetGenericMode(true);
                 pe->SetFontType(Gfx::FONT_COLOBOT);
                 pe->SetEditCap(false);
-                pe->SetHiliteCap(false);
-                pe->ReadText("help/win.txt");
+                pe->SetHighlightCap(false);
+                pe->ReadText(std::string("help/win.txt"));
             }
             else
             {
                 m_displayText->DisplayError(INFO_WIN, Math::Vector(0.0f,0.0f,0.0f), 15.0f, 60.0f, 1000.0f);
             }
+            StartMusic();
         }
-        m_sound->StopAll();
-        StartMusic();
     }
 
     if (m_phase == PHASE_LOST)
     {
+        m_sound->StopAll();
         if (m_endingLostRank == -1)
         {
             ChangePhase(PHASE_TERM);
@@ -1211,9 +1216,9 @@ void CRobotMain::ChangePhase(Phase phase)
             ddim.x = dim.x*2;  ddim.y = dim.y*2;
             m_interface->CreateButton(pos, ddim, 16, EVENT_BUTTON_OK);
             m_displayText->DisplayError(INFO_LOST, Math::Vector(0.0f,0.0f,0.0f), 15.0f, 60.0f, 1000.0f);
+            
+            StartMusic();
         }
-        m_sound->StopAll();
-        StartMusic();
     }
 
     if (m_phase == PHASE_LOADING)
@@ -3833,7 +3838,12 @@ void CRobotMain::CreateScene(bool soluce, bool fixScene, bool resetObject)
     int rankObj = 0;
     int rankGadget = 0;
     CObject* sel = 0;
+
+    std::string oldLocale;
     char *locale = setlocale(LC_NUMERIC, nullptr);
+    if (locale != nullptr)
+        oldLocale = locale;
+
     setlocale(LC_NUMERIC, "C");
 
     while (fgets(line, 500, file) != NULL)
@@ -4084,8 +4094,9 @@ void CRobotMain::CreateScene(bool soluce, bool fixScene, bool resetObject)
         {
             OpString(line, "image", name);
             AddExt(name, ".png");
-            if (strstr(name, "%user%") != 0)
-                CopyFileToTemp(name);
+            if (strstr(name, "%user%") != 0) {
+                GetProfile().CopyFileToTemp(std::string(name));
+            }
 
             m_terrain->AddMaterial(OpInt(line, "id", 0),
                                    name,
@@ -4568,8 +4579,8 @@ void CRobotMain::CreateScene(bool soluce, bool fixScene, bool resetObject)
     }
     m_dialog->SetSceneRead("");
     m_dialog->SetStackRead("");
-    
-    setlocale(LC_NUMERIC, locale);
+
+    setlocale(LC_NUMERIC, oldLocale.c_str());
 }
 
 //! Creates an object of decoration mobile or stationary
@@ -4917,6 +4928,7 @@ int CRobotMain::CreateLight(Math::Vector direction, Gfx::Color color)
     Gfx::Light light;
     light.type = Gfx::LIGHT_DIRECTIONAL;
     light.diffuse = color;
+    light.ambient = color * 0.1f;
     light.direction  = direction;
     int obj = m_lightMan->CreateLight(Gfx::LIGHT_PRI_HIGH);
     m_lightMan->SetLight(obj, light);
@@ -4934,6 +4946,7 @@ int CRobotMain::CreateSpot(Math::Vector pos, Gfx::Color color)
     Gfx::Light light;
     light.type          = Gfx::LIGHT_SPOT;
     light.diffuse       = color;
+    light.ambient       = color * 0.1f;
     light.position      = pos;
     light.direction     = Math::Vector(0.0f, -1.0f, 0.0f);
     light.spotIntensity = 1.0f;
