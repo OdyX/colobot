@@ -74,6 +74,7 @@ set(COLOBOT_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wold-style-cast ${CXX11_FLAGS}"
 set(COLOBOT_CXX_FLAGS_RELEASE "-O2")
 set(COLOBOT_CXX_FLAGS_DEBUG "-g -O0")
 
+
 # Asserts can be enabled/disabled regardless of build type
 option(ASSERTS "Enable assert()s" ON)
 
@@ -83,6 +84,9 @@ option(TESTS "Enable tests" ON)
 # CBot can also be a static library
 option(CBOT_STATIC "Build CBot as static libary" OFF)
 
+# Generate desktop files, manpage, etc.
+option(DESKTOP ON)
+
 # Doxygen docs are optional for installation
 option(INSTALL_DOCS "Install Doxygen-generated documentation" OFF)
 
@@ -91,7 +95,7 @@ option(OPENAL_SOUND "Build openal sound support" OFF)
 
 
 ##
-# Required packages
+# Searching for packages
 ##
 
 find_package(OpenGL 1.4 REQUIRED)
@@ -113,14 +117,10 @@ option(GLEW_STATIC "Link statically with GLEW" OFF)
 
 find_package(GLEW REQUIRED)
 
-include("${colobot_SOURCE_DIR}/cmake/FindLibSndFile.cmake")
-
-
-##
-# Additional settings to use when cross-compiling with MXE (http://mxe.cc/)
-##
-
-include("${colobot_SOURCE_DIR}/cmake/mxe.cmake")
+if (${OPENAL_SOUND})
+    find_package(OpenAL REQUIRED)
+    include("${colobot_SOURCE_DIR}/cmake/FindLibSndFile.cmake")
+endif()
 
 
 ##
@@ -128,22 +128,18 @@ include("${colobot_SOURCE_DIR}/cmake/mxe.cmake")
 ##
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    message(STATUS "Windows system detected")
     set(PLATFORM_WINDOWS 1)
     set(PLATFORM_LINUX   0)
     set(PLATFORM_OTHER   0)
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-    message(STATUS "Linux system detected")
     set(PLATFORM_WINDOWS 0)
     set(PLATFORM_LINUX   1)
     set(PLATFORM_OTHER   0)
 else()
-    message(STATUS "Other system detected")
     set(PLATFORM_WINDOWS 0)
     set(PLATFORM_LINUX   0)
     set(PLATFORM_OTHER   1)
 endif()
-
 
 if(NOT ${ASSERTS})
     add_definitions(-DNDEBUG)
@@ -153,6 +149,30 @@ if(${TESTS})
     add_definitions(-DTESTS -DTEST_VIRTUAL=virtual)
 else()
     add_definitions(-DTEST_VIRTUAL=)
+endif()
+
+
+##
+# Additional settings to use when cross-compiling with MXE (http://mxe.cc/)
+##
+
+include("${colobot_SOURCE_DIR}/cmake/mxe.cmake")
+
+##
+# Additional settings for MSYS
+##
+include("${colobot_SOURCE_DIR}/cmake/msys.cmake")
+
+
+##
+# Summary of detected things
+##
+if (${PLATFORM_WINDOWS})
+    message(STATUS "Build for Windows system")
+elseif(${PLATFORM_LINUX})
+    message(STATUS "Build for Linux system")
+else()
+    message(STATUS "Build for other system")
 endif()
 
 
@@ -213,11 +233,19 @@ if(${TESTS})
 endif()
 
 # Installation paths defined before compiling sources
-set(COLOBOT_INSTALL_BIN_DIR ${CMAKE_INSTALL_PREFIX}/games CACHE PATH "Colobot binary directory")
-set(COLOBOT_INSTALL_DATA_DIR ${CMAKE_INSTALL_PREFIX}/share/games/colobot CACHE PATH "Colobot shared data directory")
-set(COLOBOT_INSTALL_LIB_DIR ${CMAKE_INSTALL_PREFIX}/lib/colobot CACHE PATH "Colobot libraries directory")
-set(COLOBOT_INSTALL_DOC_DIR ${CMAKE_INSTALL_PREFIX}/share/doc/colobot CACHE PATH "Colobot documentation directory")
-set(COLOBOT_INSTALL_I18N_DIR ${CMAKE_INSTALL_PREFIX}/share/locale CACHE PATH "Colobot translations directory")
+if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    set(COLOBOT_INSTALL_BIN_DIR ${CMAKE_INSTALL_PREFIX}/ CACHE PATH "Colobot binary directory")
+    set(COLOBOT_INSTALL_LIB_DIR ${CMAKE_INSTALL_PREFIX}/ CACHE PATH "Colobot libraries directory")
+    set(COLOBOT_INSTALL_DATA_DIR ${CMAKE_INSTALL_PREFIX}/data CACHE PATH "Colobot shared data directory")
+    set(COLOBOT_INSTALL_I18N_DIR ${CMAKE_INSTALL_PREFIX}/ CACHE PATH "Colobot translations directory")
+    set(COLOBOT_INSTALL_DOC_DIR ${CMAKE_INSTALL_PREFIX}/doc CACHE PATH "Colobot documentation directory")
+else()
+    set(COLOBOT_INSTALL_BIN_DIR ${CMAKE_INSTALL_PREFIX}/games CACHE PATH "Colobot binary directory")
+    set(COLOBOT_INSTALL_LIB_DIR ${CMAKE_INSTALL_PREFIX}/lib/colobot CACHE PATH "Colobot libraries directory")
+    set(COLOBOT_INSTALL_DATA_DIR ${CMAKE_INSTALL_PREFIX}/share/games/colobot CACHE PATH "Colobot shared data directory")
+    set(COLOBOT_INSTALL_I18N_DIR ${CMAKE_INSTALL_PREFIX}/share/locale CACHE PATH "Colobot translations directory")
+    set(COLOBOT_INSTALL_DOC_DIR ${CMAKE_INSTALL_PREFIX}/share/doc/colobot CACHE PATH "Colobot documentation directory")
+endif()
 
 # Subdirectory with sources
 add_subdirectory(src bin)

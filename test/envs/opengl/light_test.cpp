@@ -1,5 +1,6 @@
 #include "app/system.h"
 
+#include "common/config.h"
 #include "common/logger.h"
 #include "common/image.h"
 
@@ -7,8 +8,8 @@
 
 #include "math/geometry.h"
 
-#include <SDL/SDL.h>
-#include <SDL/SDL_image.h>
+#include <SDL.h>
+#include <SDL_image.h>
 #include <unistd.h>
 
 #include <iostream>
@@ -257,9 +258,9 @@ void Update()
 {
     const float TRANS_SPEED =  6.0f; // units / sec
 
-    GetCurrentTimeStamp(CURR_TIME);
-    float timeDiff = TimeStampDiff(PREV_TIME, CURR_TIME, STU_SEC);
-    CopyTimeStamp(PREV_TIME, CURR_TIME);
+    GetSystemUtils()->GetCurrentTimeStamp(CURR_TIME);
+    float timeDiff = GetSystemUtils()->TimeStampDiff(PREV_TIME, CURR_TIME, STU_SEC);
+    GetSystemUtils()->CopyTimeStamp(PREV_TIME, CURR_TIME);
 
     CUBE_ORBIT += timeDiff * (Math::PI / 4.0f);
 
@@ -357,15 +358,18 @@ void MouseMove(int x, int y)
     ROTATION.x = ROTATION_BASE.x + (static_cast<float> (y - MOUSE_POS_BASE.y) / 600.0f) * Math::PI;
 }
 
-int main(int argc, char *argv[])
+extern "C"
+{
+
+int SDL_MAIN_FUNC(int argc, char *argv[])
 {
     CLogger logger;
 
-    PREV_TIME = CreateTimeStamp();
-    CURR_TIME = CreateTimeStamp();
+    PREV_TIME = GetSystemUtils()->CreateTimeStamp();
+    CURR_TIME = GetSystemUtils()->CreateTimeStamp();
 
-    GetCurrentTimeStamp(PREV_TIME);
-    GetCurrentTimeStamp(CURR_TIME);
+    GetSystemUtils()->GetCurrentTimeStamp(PREV_TIME);
+    GetSystemUtils()->GetCurrentTimeStamp(CURR_TIME);
 
     // Without any error checking, for simplicity
 
@@ -455,8 +459,10 @@ int main(int argc, char *argv[])
 
     SDL_Quit();
 
-    DestroyTimeStamp(PREV_TIME);
-    DestroyTimeStamp(CURR_TIME);
+    GetSystemUtils()->DestroyTimeStamp(PREV_TIME);
+    GetSystemUtils()->DestroyTimeStamp(CURR_TIME);
 
     return 0;
 }
+
+} // extern "C"

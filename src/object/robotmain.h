@@ -304,6 +304,7 @@ public:
     const char* GetSavegameDir();
     const char* GetPublicDir();
     const char* GetFilesDir();
+    bool        GetRetroMode();
 
     void        SetGamerName(const char *name);
     char*       GetGamerName();
@@ -447,6 +448,15 @@ protected:
     int             m_delayWriteMessage;
     int             m_movieInfoIndex;
 
+    //Level Checker flags
+    bool            m_beginObject;
+    bool            m_terrainGenerate;
+    bool            m_terrainInitTextures;
+    bool            m_terrainInit;
+    bool            m_terrainCreate;
+
+    int             m_version;         // Mission file version
+    bool            m_retroStyle;      // Retro
     bool            m_immediatSatCom;  // SatCom immediately?
     bool            m_beginSatCom;     // messages SatCom poster?
     bool            m_movieLock;       // movie in progress?
