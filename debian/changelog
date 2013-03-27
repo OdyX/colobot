@@ -1,6 +1,5 @@
 colobot (0.1.0~pre-alpha-git-dev~r211-gcd60d92-1~OdyX0) UNRELEASED; urgency=low
 
   * Initial release. (Closes: #695829)
-  * New snapshot of dev branch (211-gcd60d92)
 
  -- Didier Raboud <odyx@debian.org>  Mon, 25 Mar 2013 08:08:32 +0100
