@@ -15,25 +15,40 @@
 // * along with this program. If not, see  http://www.gnu.org/licenses/.
 
 /**
- * \file script/cbottoken.h
- * \brief Functions to parse some CBot-related tokens
+ * \file common/objman.h
+ * \brief Instance manager for objects
  */
 
 #pragma once
 
-
 #include "object/object.h"
 
+#include "common/singleton.h"
 
+const int MAX_OBJECTS = 500;
 
-// Procedures.
+/**
+ * \class ObjectManager
+ * \brief Manager for objects
+ */
+class CObjectManager : public CSingleton<CObjectManager>
+{
+public:
+    CObjectManager();
+    virtual ~CObjectManager();
 
-extern const char* GetObjectName(ObjectType type);
-extern const char* GetObjectAlias(ObjectType type);
-extern std::string GetHelpFilename(ObjectType type);
-extern std::string GetHelpFilename(const char *token);
-extern bool IsType(const char *token);
-extern bool IsFunction(const char *token);
-extern const char* GetHelpText(const char *token);
+    //! Registers new object
+    bool      AddInstance(CObject* instance);
+    //! Deletes the registered object
+    bool      DeleteInstance(CObject* instance);
+    //! Seeks for an object
+    CObject*  SearchInstance(int id);
+    //! Creates an object
+    CObject*  CreateObject(Math::Vector pos, float angle, float zoom, float height, ObjectType type, float power, bool trainer, bool toy, int option);
+
+protected:
+    CObject* m_table[MAX_OBJECTS];
+    int usedCount;
+};
 
 

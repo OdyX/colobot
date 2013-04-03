@@ -1389,8 +1389,9 @@ bool CBrain::CreateInterface(bool bSelect)
         pw->CreateButton(pos, dim, 33, EVENT_OBJECT_MFRONT);
     }
 
-    if ( type == OBJECT_MOBILEsa &&  // underwater?
-         !m_object->GetTrainer() )
+    if ( ( type == OBJECT_MOBILEsa &&  // underwater?
+         !m_object->GetTrainer() ) ||
+         type == OBJECT_BEE )
     {
         pos.x = ox+sx*7.7f;
         pos.y = oy+sy*0.5f;
@@ -1943,9 +1944,7 @@ bool CBrain::CreateInterface(bool bSelect)
 void CBrain::UpdateInterface(float rTime)
 {
     Ui::CWindow*    pw;
-/* TODO: #if _TEEN
     Ui::CButton*    pb;
-#endif*/
     Ui::CGauge*     pg;
     Ui::CCompass*   pc;
     Ui::CGroup*     pgr;
@@ -2057,8 +2056,7 @@ void CBrain::UpdateInterface(float rTime)
         pc->SetState(Ui::STATE_VISIBLE, m_main->GetShowMap());
     }
 
-#if _TEEN
-    pb = (CButton*)pw->SearchControl(EVENT_OBJECT_REC);
+    pb = static_cast<Ui::CButton*>(pw->SearchControl(EVENT_OBJECT_REC));
     if ( pb != 0 )
     {
         if ( m_bTraceRecord && Math::Mod(m_time, 0.4f) >= 0.2f )
@@ -2070,7 +2068,6 @@ void CBrain::UpdateInterface(float rTime)
             pb->ClearState(Ui::STATE_CHECK);
         }
     }
-#endif
 
     bOnBoard = m_camera->GetType() == Gfx::CAM_TYPE_ONBOARD;
 
@@ -2150,10 +2147,8 @@ void CBrain::UpdateInterface()
     Ui::CWindow*    pw;
     Ui::CButton*    pb;
     Ui::CSlider*    ps;
-#if _TEEN
-    CColor*     pc;
+    Ui::CColor*     pc;
     int         color;
-#endif
     bool        bEnable, bFly, bRun;
     char        title[100];
 
@@ -2188,7 +2183,6 @@ void CBrain::UpdateInterface()
     EnableInterface(pw, EVENT_OBJECT_FIRE,        bEnable);
     EnableInterface(pw, EVENT_OBJECT_SPIDEREXPLO, bEnable);
     EnableInterface(pw, EVENT_OBJECT_RESET,       bEnable);
-#if _TEEN
     EnableInterface(pw, EVENT_OBJECT_PEN0,        bEnable);
     EnableInterface(pw, EVENT_OBJECT_PEN1,        bEnable);
     EnableInterface(pw, EVENT_OBJECT_PEN2,        bEnable);
@@ -2200,7 +2194,6 @@ void CBrain::UpdateInterface()
     EnableInterface(pw, EVENT_OBJECT_PEN8,        bEnable);
     EnableInterface(pw, EVENT_OBJECT_REC,         bEnable);
     EnableInterface(pw, EVENT_OBJECT_STOP,        bEnable);
-#endif
 
     if ( type == OBJECT_HUMAN )  // builder?
     {
@@ -2351,7 +2344,6 @@ void CBrain::UpdateInterface()
         CheckInterface(pw, EVENT_OBJECT_MFRONT, m_manipStyle==EVENT_OBJECT_MFRONT);
     }
 
-#if _TEEN
     if ( m_object->GetTraceDown() )
     {
         pb = static_cast< Ui::CButton* >(pw->SearchControl(EVENT_OBJECT_PEN0));
@@ -2451,7 +2443,6 @@ void CBrain::UpdateInterface()
             pc->ClearState(Ui::STATE_CHECK);
         }
     }
-#endif
 }
 
 // Updates the list of programs.

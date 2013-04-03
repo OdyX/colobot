@@ -31,6 +31,8 @@
 #include "graphics/engine/engine.h"
 #include "graphics/opengl/gldevice.h"
 
+#include "object/objman.h"
+
 
 #include <string>
 #include <vector>
@@ -374,6 +376,8 @@ protected:
     //! Instance manager
     // TODO: to be removed
     CInstanceManager*       m_iMan;
+    //! Object manager
+    CObjectManager*         m_objMan;
     //! Global event queue
     CEventQueue*            m_eventQueue;
     //! Graphics engine
@@ -454,6 +458,9 @@ protected:
 
     //! Path to directory with data files
     std::string     m_dataPath;
+
+    //! Path to directory with language files
+    std::string     m_langPath;
 
     const char*     m_dataDirs[DIR_MAX];
 

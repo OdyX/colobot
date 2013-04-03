@@ -34,7 +34,7 @@
 #include "graphics/engine/engine.h"
 #include "graphics/engine/lightman.h"
 #include "graphics/engine/lightning.h"
-#include "graphics/engine/modelfile.h"
+#include "graphics/engine/modelmanager.h"
 #include "graphics/engine/particle.h"
 #include "graphics/engine/planet.h"
 #include "graphics/engine/pyro.h"
@@ -659,6 +659,7 @@ CRobotMain::CRobotMain(CApplication* app)
     m_retroStyle   = false;
     m_immediatSatCom = false;
     m_beginSatCom  = false;
+    m_lockedSatCom = false;
     m_movieLock    = false;
     m_satComLock   = false;
     m_editLock     = false;
@@ -804,6 +805,11 @@ CRobotMain::CRobotMain(CApplication* app)
     CBotProgram::DefineNum("FilterOnlyLanding", FILTER_ONLYLANDING);
     CBotProgram::DefineNum("FilterOnlyFliying", FILTER_ONLYFLYING);
 
+    CBotProgram::DefineNum("ExploNone", 0);
+    CBotProgram::DefineNum("ExploBoum", EXPLO_BOUM);
+    CBotProgram::DefineNum("ExploBurn", EXPLO_BURN);
+    CBotProgram::DefineNum("ExploWater", EXPLO_WATER);
+
     CBotProgram::DefineNum("PolskiPortalColobota", 1337);
 
     CBotClass* bc;
@@ -830,6 +836,7 @@ CRobotMain::CRobotMain(CApplication* app)
     bc->AddItem("material",    CBotTypResult(CBotTypInt), PR_READ);
     bc->AddItem("energyCell",  CBotTypResult(CBotTypPointer, "object"), PR_READ);
     bc->AddItem("load",        CBotTypResult(CBotTypPointer, "object"), PR_READ);
+    bc->AddItem("id",          CBotTypResult(CBotTypInt), PR_READ);
 
     // Initializes the class FILE.
     InitClassFILE();
@@ -1040,6 +1047,7 @@ void CRobotMain::ChangePhase(Phase phase)
     FlushDisplayInfo();
     m_engine->SetRankView(0);
     m_engine->DeleteAllObjects();
+    Gfx::CModelManager::GetInstancePointer()->DeleteAllModelCopies();
     m_engine->SetWaterAddColor(Gfx::Color(0.0f, 0.0f, 0.0f, 0.0f));
     m_engine->SetBackground("");
     m_engine->SetBackForce(false);
@@ -1136,13 +1144,13 @@ void CRobotMain::ChangePhase(Phase phase)
         if (m_mapImage)
             m_map->SetFixImage(m_mapFilename);
 
-        Math::Point ddim;
+        /*Math::Point ddim;
 
         pos.x = 620.0f/640.0f;
         pos.y = 460.0f/480.0f;
         ddim.x = 20.0f/640.0f;
         ddim.y = 20.0f/480.0f;
-        m_interface->CreateButton(pos, ddim, 11, EVENT_BUTTON_QUIT);
+        m_interface->CreateButton(pos, ddim, 11, EVENT_BUTTON_QUIT);*/
 
         if (m_immediatSatCom && !loading  &&
             m_infoFilename[SATCOM_HUSTON][0] != 0)
@@ -1195,7 +1203,7 @@ void CRobotMain::ChangePhase(Phase phase)
                 pe->SetFontType(Gfx::FONT_COLOBOT);
                 pe->SetEditCap(false);
                 pe->SetHighlightCap(false);
-                pe->ReadText(std::string("help/win.txt"));
+                pe->ReadText(std::string("help/") + m_app->GetLanguageChar() + std::string("/win.txt"));
             }
             else
             {
@@ -1331,7 +1339,7 @@ bool CRobotMain::EventProcess(Event &event)
     // Management of the console.
     if (m_phase != PHASE_NAME &&
         !m_movie->IsExist()   &&
-        !m_movieLock && !m_editLock &&
+        !m_movieLock && !m_editLock && !m_engine->GetPause() &&
         event.type == EVENT_KEY_DOWN &&
         event.key.key == KEY(PAUSE))  // Pause ?
     {
@@ -1473,8 +1481,9 @@ bool CRobotMain::EventProcess(Event &event)
                         ChangePhase(PHASE_WIN);
                     else if (m_lostDelay > 0.0f)
                         ChangePhase(PHASE_LOST);
-                    else
+                    else if (!m_cmdEdit) {
                         m_dialog->StartAbort();  // do you want to leave?
+                    }
                 }
                 if (event.key.key == KEY(PAUSE))
                 {
@@ -2019,7 +2028,7 @@ void CRobotMain::FlushDisplayInfo()
         m_infoFilename[i][0] = 0;
         m_infoPos[i] = 0;
     }
-    strcpy(m_infoFilename[SATCOM_OBJECT], "help/objects.txt");
+    strcpy(m_infoFilename[SATCOM_OBJECT], "help/") + m_app->GetLanguageChar() + std::string("/objects.txt");
     m_infoIndex = 0;
 }
 
@@ -2027,7 +2036,7 @@ void CRobotMain::FlushDisplayInfo()
 //! index: SATCOM_*
 void CRobotMain::StartDisplayInfo(int index, bool movie)
 {
-    if (m_cmdEdit || m_satComLock) return;
+    if (m_cmdEdit || m_satComLock || m_lockedSatCom) return;
 
     CObject* obj = GetSelect();
     bool human = obj != nullptr && obj->GetType() == OBJECT_HUMAN;
@@ -3071,7 +3080,7 @@ void CRobotMain::HelpObject()
     CObject* obj = GetSelect();
     if (obj == nullptr) return;
 
-    const char* filename = GetHelpFilename(obj->GetType());
+    const char* filename = GetHelpFilename(obj->GetType()).c_str();
     if (filename[0] == 0) return;
 
     StartDisplayInfo(filename, -1);
@@ -3728,6 +3737,7 @@ void CRobotMain::ScenePerso()
 {
     DeleteAllObjects();  // removes all the current 3D Scene
     m_engine->DeleteAllObjects();
+    Gfx::CModelManager::GetInstancePointer()->DeleteAllModelCopies();
     m_terrain->FlushRelief();  // all flat
     m_terrain->FlushBuildingLevel();
     m_terrain->FlushFlyingLimit();
@@ -3789,6 +3799,7 @@ void CRobotMain::CreateScene(bool soluce, bool fixScene, bool resetObject)
         m_displayText->SetDelay(1.0f);
         m_displayText->SetEnable(true);
         m_immediatSatCom = false;
+        m_lockedSatCom = false;
         m_endingWinRank   = 0;
         m_endingLostRank  = 0;
         m_endTakeTotal = 0;
@@ -3862,12 +3873,7 @@ void CRobotMain::CreateScene(bool soluce, bool fixScene, bool resetObject)
     int rankGadget = 0;
     CObject* sel = 0;
 
-    std::string oldLocale;
-    char *locale = setlocale(LC_NUMERIC, nullptr);
-    if (locale != nullptr)
-        oldLocale = locale;
-
-    setlocale(LC_NUMERIC, "C");
+    SetNumericLocale();
 
     while (fgets(line, 500, file) != NULL)
     {
@@ -3908,6 +3914,7 @@ void CRobotMain::CreateScene(bool soluce, bool fixScene, bool resetObject)
             strcpy(m_infoFilename[SATCOM_HUSTON], path.c_str());
 
             m_immediatSatCom = OpInt(line, "immediat", 0);
+            if(m_version >= 2) m_beginSatCom = m_lockedSatCom = OpInt(line, "lock", 0);
         }
 
         if (Cmd(line, "Satellite") && !resetObject)
@@ -4328,12 +4335,13 @@ void CRobotMain::CreateScene(bool soluce, bool fixScene, bool resetObject)
 
             Math::Vector pos = OpPos(line, "pos")*g_unit;
             float dir = OpFloat(line, "dir", 0.0f)*Math::PI;
+            bool trainer = OpInt(line, "trainer", 0);
             CObject* obj = CreateObject(pos, dir,
                                         OpFloat(line, "z", 1.0f),
                                         OpFloat(line, "h", 0.0f),
                                         type,
                                         OpFloat(line, "power", 1.0f),
-                                        OpInt(line, "trainer", 0),
+                                        trainer,
                                         OpInt(line, "toy", 0),
                                         OpInt(line, "option", 0));
 
@@ -4395,12 +4403,14 @@ void CRobotMain::CreateScene(bool soluce, bool fixScene, bool resetObject)
                 obj->SetShield(OpFloat(line, "shield", 1.0f));
                 obj->SetMagnifyDamage(OpFloat(line, "magnifyDamage", 1.0f));
                 obj->SetClip(OpInt(line, "clip", 1));
-                obj->SetCheckToken(OpInt(line, "checkToken", 1));
-                obj->SetManual(OpInt(line, "manual", 0));
+                obj->SetCheckToken(m_version >= 2 ? trainer : OpInt(line, "manual", 1));
+                obj->SetManual(m_version >= 2 ? !trainer : OpInt(line, "manual", 0));
 
-                Math::Vector zoom = OpDir(line, "zoom");
-                if (zoom.x != 0.0f || zoom.y != 0.0f || zoom.z != 0.0f)
-                    obj->SetZoom(0, zoom);
+                if(m_version >= 2) {
+                    Math::Vector zoom = OpDir(line, "zoom");
+                    if (zoom.x != 0.0f || zoom.y != 0.0f || zoom.z != 0.0f)
+                        obj->SetZoom(0, zoom);
+                }
 
                 CMotion* motion = obj->GetMotion();
                 if (motion != nullptr)
@@ -4731,7 +4741,7 @@ void CRobotMain::CreateScene(bool soluce, bool fixScene, bool resetObject)
     m_dialog->SetSceneRead("");
     m_dialog->SetStackRead("");
 
-    setlocale(LC_NUMERIC, oldLocale.c_str());
+    RestoreNumericLocale();
 }
 
 //! Creates an object of decoration mobile or stationary
@@ -5938,6 +5948,8 @@ bool CRobotMain::IsBusy()
 void CRobotMain::IOWriteObject(FILE *file, CObject* obj, const char *cmd)
 {
     if (obj->GetType() == OBJECT_FIX) return;
+    
+    SetNumericLocale();
 
     char line[3000];
     char name[100];
@@ -6025,6 +6037,8 @@ void CRobotMain::IOWriteObject(FILE *file, CObject* obj, const char *cmd)
 
     strcat(line, "\n");
     fputs(line, file);
+    
+    RestoreNumericLocale();
 }
 
 //! Saves the current game
@@ -6032,6 +6046,8 @@ bool CRobotMain::IOWriteScene(const char *filename, const char *filecbot, char *
 {
     FILE* file = fopen(filename, "w");
     if (file == NULL)  return false;
+    
+    SetNumericLocale();
 
     char line[500];
 
@@ -6094,6 +6110,8 @@ bool CRobotMain::IOWriteScene(const char *filename, const char *filecbot, char *
         SaveFileScript(obj, filename, objRank++);
     }
     fclose(file);
+    
+    RestoreNumericLocale();
 
 #if CBOT_STACK
     // Writes the file of stacks of execution.
@@ -6139,6 +6157,8 @@ CObject* CRobotMain::IOReadObject(char *line, const char* filename, int objRank)
     if (type == OBJECT_NULL)
         return nullptr;
 
+    SetNumericLocale();
+    
     int trainer = OpInt(line, "trainer", 0);
     int toy = OpInt(line, "toy", 0);
     int option = OpInt(line, "option", 0);
@@ -6204,6 +6224,8 @@ CObject* CRobotMain::IOReadObject(char *line, const char* filename, int objRank)
             automat->Start(run);  // starts the film
     }
 
+    RestoreNumericLocale();
+    
     return obj;
 }
 
@@ -6214,6 +6236,8 @@ CObject* CRobotMain::IOReadScene(const char *filename, const char *filecbot)
 
     FILE* file = fopen(filename, "r");
     if (file == NULL) return 0;
+    
+    SetNumericLocale();
 
     CObject* fret   = nullptr;
     CObject* power  = nullptr;
@@ -6335,6 +6359,8 @@ CObject* CRobotMain::IOReadScene(const char *filename, const char *filecbot)
         fClose(file);
     }
 #endif
+
+    RestoreNumericLocale();
 
     return sel;
 }
@@ -7032,3 +7058,18 @@ void CRobotMain::ClearInterface()
     HiliteClear();  // removes setting evidence
     m_tooltipName[0] = 0;  // really removes the tooltip
 }
+
+void CRobotMain::SetNumericLocale()
+{
+    char *locale = setlocale(LC_NUMERIC, nullptr);
+    if (locale != nullptr)
+        m_oldLocale = locale;
+
+    setlocale(LC_NUMERIC, "C");
+}
+
+void CRobotMain::RestoreNumericLocale()
+{
+    setlocale(LC_NUMERIC, m_oldLocale.c_str());
+}
+    

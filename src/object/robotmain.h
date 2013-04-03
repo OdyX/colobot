@@ -352,6 +352,9 @@ public:
     CObject*    IOReadObject(char *line, const char* filename, int objRank);
 
     int         CreateSpot(Math::Vector pos, Gfx::Color color);
+    
+    void        SetNumericLocale();
+    void        RestoreNumericLocale();
 
 protected:
     bool        EventFrame(const Event &event);
@@ -390,6 +393,7 @@ protected:
     void        ExecuteCmd(char *cmd);
     bool        TestGadgetQuantity(int rank);
     void        UpdateSpeedLabel();
+    
 
 protected:
     CApplication*       m_app;
@@ -459,6 +463,7 @@ protected:
     bool            m_retroStyle;      // Retro
     bool            m_immediatSatCom;  // SatCom immediately?
     bool            m_beginSatCom;     // messages SatCom poster?
+    bool            m_lockedSatCom;    // SatCom locked?
     bool            m_movieLock;       // movie in progress?
     bool            m_satComLock;      // call of SatCom is possible?
     bool            m_editLock;        // edition in progress?
@@ -539,5 +544,7 @@ protected:
     Gfx::Color      m_colorRefWater;
     Gfx::Color      m_colorNewWater;
     float           m_colorShiftWater;
+    
+    std::string     m_oldLocale;
 };
 

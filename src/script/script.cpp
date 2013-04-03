@@ -33,6 +33,7 @@
 #include "object/object.h"
 #include "object/robotmain.h"
 #include "object/task/taskmanager.h"
+#include "object/objman.h"
 
 #include "physics/physics.h"
 
@@ -329,15 +330,12 @@ CBotTypResult CScript::cGetObject(CBotVar* &var, void* user)
 
 bool CScript::rGetObject(CBotVar* var, CBotVar* result, int& exception, void* user)
 {
-    CScript*    script = (static_cast<CObject*>(user))->GetRunScript();
     CObject*    pObj;
     int         rank;
 
     rank = var->GetValInt();
 
-    CInstanceManager* iMan = CInstanceManager::GetInstancePointer();
-
-    pObj = static_cast<CObject*>(iMan->SearchInstance(CLASS_OBJECT, rank));
+    pObj = static_cast<CObject*>(CObjectManager::GetInstancePointer()->SearchInstance(rank));
     if ( pObj == 0 )
     {
         result->SetPointer(0);
@@ -348,6 +346,66 @@ bool CScript::rGetObject(CBotVar* var, CBotVar* result, int& exception, void* us
     }
     return true;
 }
+
+// Compilation of the instruction "destroy(rank[, exploType[, force]])".
+
+CBotTypResult CScript::cDestroy(CBotVar* &var, void* user)
+{
+    if ( var == 0 )  return CBotTypResult(CBotErrLowParam);
+
+    if ( var->GetType() > CBotTypDouble )  return CBotTypResult(CBotErrBadNum);
+    var = var->GetNext();
+
+    if ( var != 0 ) {
+        if ( var->GetType() != CBotTypInt ) return CBotTypResult(CBotErrBadNum);
+        var = var->GetNext();
+
+        if ( var != 0 ) {
+            if ( var->GetType() > CBotTypDouble ) return CBotTypResult(CBotErrBadNum);
+            var = var->GetNext();
+        }
+    }
+
+    if ( var != 0 )  return CBotTypResult(CBotErrOverParam);
+
+    return CBotTypResult(CBotTypFloat);
+}
+
+// Instruction "destroy(rank[, exploType[, force]])".
+
+bool CScript::rDestroy(CBotVar* var, CBotVar* result, int& exception, void* user)
+{
+    CObject*    pObj;
+    int         rank;
+    int         exploType = 0;
+    float       force = 1.0f;
+
+    rank = var->GetValInt();
+    var->GetNext();
+    if ( var != 0 ) {
+        exploType = var->GetValInt();
+        var->GetNext();
+        if ( var != 0 ) {
+            force = var->GetValFloat();
+        }
+    }
+
+    pObj = static_cast<CObject*>(CObjectManager::GetInstancePointer()->SearchInstance(rank));
+    if ( pObj == 0 )
+    {
+        return true;
+    }
+    else
+    {
+        if ( exploType ) {
+            pObj->ExploObject(static_cast<ExploType>(exploType), force);
+        } else {
+            pObj->DeleteObject(false);
+        }
+    }
+    return true;
+}
+
 
 
 // Compilation of the instruction "search(type, pos)".
@@ -380,7 +438,6 @@ CBotTypResult CScript::cSearch(CBotVar* &var, void* user)
 
 bool CScript::rSearch(CBotVar* var, CBotVar* result, int& exception, void* user)
 {
-    CScript*    script = (static_cast<CObject *>(user))->GetRunScript();
     CObject     *pObj, *pBest;
     CBotVar*    array;
     Math::Vector    pos, oPos;
@@ -523,7 +580,6 @@ CBotTypResult CScript::cRadar(CBotVar* &var, void* user)
 
 bool CScript::rRadar(CBotVar* var, CBotVar* result, int& exception, void* user)
 {
-    CScript*    script = (static_cast<CObject *>(user))->GetRunScript();
     CObject*    pThis = static_cast<CObject *>(user);
     CObject     *pObj, *pBest;
     CPhysics*   physics;
@@ -1210,6 +1266,7 @@ bool CScript::rProduce(CBotVar* var, CBotVar* result, int& exception, void* user
             physics->SetFreeze(false);  // can move
         }
         object->SetLock(false);  // vehicle useable
+        object->SetManual(true);
         object->SetActivity(true);
         script->m_main->CreateShortcuts();
     }
@@ -2897,6 +2954,7 @@ void CScript::InitFonctions()
     CBotProgram::AddFunction("abs",       rAbs,       CScript::cOneFloat);
 
     CBotProgram::AddFunction("retobject", rGetObject, CScript::cGetObject);
+    CBotProgram::AddFunction("destroy",   rDestroy,   CScript::cDestroy);
     CBotProgram::AddFunction("search",    rSearch,    CScript::cSearch);
     CBotProgram::AddFunction("radar",     rRadar,     CScript::cRadar);
     CBotProgram::AddFunction("detect",    rDetect,    CScript::cDetect);
