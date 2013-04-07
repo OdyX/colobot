@@ -82,6 +82,7 @@ bool ALSound::Create(bool b3D)
     }
     alcMakeContextCurrent(mContext);
     alListenerf(AL_GAIN, mAudioVolume);
+    alDistanceModel(AL_LINEAR_DISTANCE);
 
     mCurrentMusic = new Channel();
     GetLogger()->Info("Done.\n");
@@ -92,15 +93,25 @@ bool ALSound::Create(bool b3D)
 
 void ALSound::SetSound3D(bool bMode)
 {
-    // TODO stub! need to be implemented
     m3D = bMode;
+    
+    if (!m3D) {
+        float orientation[] = {0.0f, 0.0f, 0.0f, 0.f, 1.f, 0.f};   
+        alListener3f(AL_POSITION, 0.0f, 0.0f, 0.0f); 
+        alListenerfv(AL_ORIENTATION, orientation);
+        
+        for (auto c : mChannels) {
+            if (c.second->IsPlaying()) {
+                c.second->SetPosition(Math::Vector(0.0f, 0.0f, 0.0f));
+            }
+        }
+    }
 }
 
 
 bool ALSound::GetSound3D()
 {
-    // TODO stub! need to be implemented
-    return true;
+    return m3D;
 }
 
 
@@ -371,7 +382,9 @@ bool ALSound::Position(int channel, Math::Vector pos)
         return false;
     }
 
-    mChannels[channel]->SetPosition(pos);
+    if (m3D) {
+        mChannels[channel]->SetPosition(pos);
+    }
     return true;
 }
 
@@ -494,9 +507,11 @@ void ALSound::FrameMove(float delta)
 
 void ALSound::SetListener(Math::Vector eye, Math::Vector lookat)
 {
-    float orientation[] = {lookat.x, lookat.y, lookat.z, 0.f, 1.f, 0.f};
-    alListener3f(AL_POSITION, eye.x, eye.y, eye.z);
-    alListenerfv(AL_ORIENTATION, orientation);
+    if (m3D) {
+        float orientation[] = {lookat.x, lookat.y, lookat.z, 0.f, 1.f, 0.f};   
+        alListener3f(AL_POSITION, eye.x, eye.y, eye.z); 
+        alListenerfv(AL_ORIENTATION, orientation);
+    }
 }
 
 
