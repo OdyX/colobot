@@ -26,8 +26,9 @@ ALSound::ALSound()
     m3D = false;
     mAudioVolume = 1.0f;
     mMusicVolume = 1.0f;
-    mMute = false;
     mCurrentMusic = nullptr;
+    mEye.LoadZero();
+    mLookat.LoadZero();
 }
 
 
@@ -82,7 +83,7 @@ bool ALSound::Create(bool b3D)
     }
     alcMakeContextCurrent(mContext);
     alListenerf(AL_GAIN, mAudioVolume);
-    alDistanceModel(AL_LINEAR_DISTANCE);
+    alDistanceModel(AL_LINEAR_DISTANCE_CLAMPED);
 
     mCurrentMusic = new Channel();
     GetLogger()->Info("Done.\n");
@@ -94,18 +95,6 @@ bool ALSound::Create(bool b3D)
 void ALSound::SetSound3D(bool bMode)
 {
     m3D = bMode;
-    
-    if (!m3D) {
-        float orientation[] = {0.0f, 0.0f, 0.0f, 0.f, 1.f, 0.f};   
-        alListener3f(AL_POSITION, 0.0f, 0.0f, 0.0f); 
-        alListenerfv(AL_ORIENTATION, orientation);
-        
-        for (auto c : mChannels) {
-            if (c.second->IsPlaying()) {
-                c.second->SetPosition(Math::Vector(0.0f, 0.0f, 0.0f));
-            }
-        }
-    }
 }
 
 
@@ -300,7 +289,7 @@ bool ALSound::SearchFreeBuffer(Sound sound, int &channel, bool &bAlreadyLoaded)
 
 int ALSound::Play(Sound sound, float amplitude, float frequency, bool bLoop)
 {
-    return Play(sound, Math::Vector(), amplitude, frequency, bLoop);
+    return Play(sound, mEye, amplitude, frequency, bLoop);
 }
 
 
@@ -325,7 +314,13 @@ int ALSound::Play(Sound sound, Math::Vector pos, float amplitude, float frequenc
             return -1;
         }
     }
+    
     Position(channel, pos);
+    if (!m3D) {
+        ComputeVolumePan2D(channel, pos);
+    } else {
+        mChannels[channel]->SetVolume(1.0f);
+    }
 
     // setting initial values
     mChannels[channel]->SetStartAmplitude(amplitude);
@@ -333,7 +328,7 @@ int ALSound::Play(Sound sound, Math::Vector pos, float amplitude, float frequenc
     mChannels[channel]->SetChangeFrequency(1.0f);
     mChannels[channel]->ResetOper();
     mChannels[channel]->SetFrequency(frequency);
-    mChannels[channel]->SetVolume(powf(amplitude, 0.2f) * mAudioVolume);
+    mChannels[channel]->SetVolume(powf(amplitude * mChannels[channel]->GetVolume(), 0.2f) * mAudioVolume);
     mChannels[channel]->SetLoop(bLoop);
     mChannels[channel]->Play();
 
@@ -384,6 +379,8 @@ bool ALSound::Position(int channel, Math::Vector pos)
 
     if (m3D) {
         mChannels[channel]->SetPosition(pos);
+    } else {
+        ComputeVolumePan2D(channel, pos);
     }
     return true;
 }
@@ -437,15 +434,21 @@ bool ALSound::MuteAll(bool bMute)
 {
     if (!mEnabled)
         return false;
+    
+    for (auto it : mChannels) {
+        if (it.second->IsPlaying()) {
+            it.second->Mute(bMute);
+        }
+    }
 
-    mMute = bMute;
-    if (mMute) {
+    if (bMute) {
         mCurrentMusic->SetVolume(0.0f);
     } else {
         mCurrentMusic->SetVolume(mMusicVolume);
     }
     return true;
 }
+
 
 void ALSound::FrameMove(float delta)
 {
@@ -459,7 +462,7 @@ void ALSound::FrameMove(float delta)
             continue;
         }
         
-        if (mMute) {
+        if (it.second->IsMuted()) {
             it.second->SetVolume(0.0f);
             continue;
         }
@@ -473,11 +476,9 @@ void ALSound::FrameMove(float delta)
         progress = MIN(progress, 1.0f);
        
         // setting volume
-        if (!mMute) {
-            volume = progress * (oper.finalAmplitude - it.second->GetStartAmplitude());
-            volume = (volume + it.second->GetStartAmplitude());
-            it.second->SetVolume(powf(volume, 0.2f) * mAudioVolume);
-        }
+        volume = progress * (oper.finalAmplitude - it.second->GetStartAmplitude());
+        volume = (volume + it.second->GetStartAmplitude());
+        it.second->SetVolume(powf(volume, 0.2f) * mAudioVolume);
 
         // setting frequency
         frequency = progress;
@@ -507,9 +508,15 @@ void ALSound::FrameMove(float delta)
 
 void ALSound::SetListener(Math::Vector eye, Math::Vector lookat)
 {
+    mEye = eye;
+    mLookat = lookat;
     if (m3D) {
         float orientation[] = {lookat.x, lookat.y, lookat.z, 0.f, 1.f, 0.f};   
         alListener3f(AL_POSITION, eye.x, eye.y, eye.z); 
+        alListenerfv(AL_ORIENTATION, orientation);
+    } else {
+        float orientation[] = {0.0f, 0.0f, 0.0f, 0.f, 1.f, 0.f};   
+        alListener3f(AL_POSITION, 0.0f, 0.0f, 0.0f); 
         alListenerfv(AL_ORIENTATION, orientation);
     }
 }
@@ -599,4 +606,50 @@ void ALSound::SuspendMusic()
     }
     
     mCurrentMusic->Stop();
+}
+
+
+void ALSound::ComputeVolumePan2D(int channel, Math::Vector &pos)
+{
+    float dist, a, g;
+
+    if (VectorsEqual(pos, mEye)) {
+        mChannels[channel]->SetVolume(1.0f);  // maximum volume
+        mChannels[channel]->SetPosition(Math::Vector());  // at the center
+        return;
+    }
+
+    dist = Distance(pos, mEye);
+    if ( dist >= 110.0f ) { // very far?
+        mChannels[channel]->SetVolume(0.0f);  // silence
+        mChannels[channel]->SetPosition(Math::Vector());  // at the center
+        return;
+    } else if ( dist <= 10.0f ) { // very close?
+        mChannels[channel]->SetVolume(1.0f);   // maximum volume
+        mChannels[channel]->SetPosition(Math::Vector());  // at the center
+        return;
+    }
+    mChannels[channel]->SetVolume(1.0f - ((dist - 10.0f) / 100.0f));
+
+    a = fmodf(Angle(mLookat, mEye), Math::PI * 2.0f);
+    g = fmodf(Angle(pos, mEye), Math::PI * 2.0f);
+    
+    if ( a < 0.0f ) {
+        a += Math::PI * 2.0f;
+    }
+    if ( g < 0.0f ) {
+        g += Math::PI * 2.0f;
+    }
+    
+    if ( a < g ) {
+        if (a + Math::PI * 2.0f - g < g - a ) {
+            a += Math::PI * 2.0f;
+        }
+    } else {
+        if ( g + Math::PI * 2.0f - a < a - g ) {
+            g += Math::PI * 2.0f;
+        }
+    }
+    
+    mChannels[channel]->SetPosition( Math::Vector(sinf(g - a), 0.0f, 0.0f) );
 }

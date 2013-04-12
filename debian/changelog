@@ -1,5 +1,5 @@
-colobot (0.1.0~pre-alpha-git-dev~r256-g7513bc5-1~OdyX0) UNRELEASED; urgency=low
+colobot (0.1.0~pre-alpha-git-dev~r264-gbc760e3-1~OdyX0) UNRELEASED; urgency=low
 
   * Initial release. (Closes: #695829)
 
- -- Didier Raboud <odyx@debian.org>  Sun, 07 Apr 2013 17:22:58 +0200
+ -- Didier Raboud <odyx@debian.org>  Fri, 12 Apr 2013 12:08:31 +0200

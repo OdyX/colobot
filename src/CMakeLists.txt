@@ -34,7 +34,7 @@ elseif (${PLATFORM_WINDOWS})
     set(PLATFORM_LIBS "-lintl")
 elseif(${PLATFORM_LINUX})
     # for clock_gettime
-    set(PLATFORM_LIBS "-lrt")
+    set(PLATFORM_LIBS "-lrt -lX11")
 endif()
 
 
@@ -196,6 +196,7 @@ ${Boost_LIBRARIES}
 ${LIBSNDFILE_LIBRARY}
 ${OPTIONAL_LIBS}
 ${PLATFORM_LIBS}
+clipboard
 )
 
 # Local
@@ -216,6 +217,7 @@ ${GLEW_INCLUDE_PATH}
 ${Boost_INCLUDE_DIRS}
 ${LIBSNDFILE_INCLUDE_DIR}
 ${OPTIONAL_INCLUDE_DIRS}
+${CLIPBOARD_DIR}
 )
 
 link_directories(${CMAKE_CURRENT_SOURCE_DIR}/CBot)

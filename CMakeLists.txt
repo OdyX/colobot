@@ -110,7 +110,7 @@ find_package(SDL_ttf 2.0 REQUIRED)
 find_package(PNG 1.2 REQUIRED)
 find_package(Gettext REQUIRED)
 
-set(Boost_USE_STATIC_LIBS        ON)
+set(Boost_USE_STATIC_LIBS        OFF)
 set(Boost_USE_MULTITHREADED      ON)
 set(Boost_USE_STATIC_RUNTIME    OFF)
 
@@ -179,6 +179,13 @@ elseif(${PLATFORM_LINUX})
 else()
     message(STATUS "Build for other system")
 endif()
+
+
+##
+# Clipboard support
+##
+set(CLIPBOARD_DIR ${colobot_SOURCE_DIR}/lib/clipboard/include)
+add_subdirectory(${colobot_SOURCE_DIR}/lib/clipboard bin/clipboard)
 
 
 ##
