@@ -8,7 +8,7 @@ elseif (${PLATFORM_WINDOWS})
     set(PLATFORM_LIBS "-lintl")
 elseif(${PLATFORM_LINUX})
     # for clock_gettime
-    set(PLATFORM_LIBS "-lrt")
+    set(PLATFORM_LIBS "-lrt -lX11")
 endif()
 
 
@@ -211,6 +211,7 @@ set(LIBS
 gtest
 gmock
 CBot
+clipboard
 ${SDL_LIBRARY}
 ${SDLIMAGE_LIBRARY}
 ${SDLTTF_LIBRARY}
@@ -221,13 +222,12 @@ ${Boost_LIBRARIES}
 ${OPTIONAL_LIBS}
 ${PLATFORM_LIBS}
 ${LIBSNDFILE_LIBRARY}
-clipboard
 )
 
 add_executable(colobot_ut ${COLOBOT_SOURCES} ${UT_SOURCES} ${OPENAL_SOURCES})
 target_link_libraries(colobot_ut ${LIBS})
 
-add_test(colobot_ut ./colobot_ut)
+#add_test(colobot_ut ./colobot_ut)
 
 # TODO: change the unit cases to independent automated tests to be included in colobot_ut
 add_subdirectory(common)

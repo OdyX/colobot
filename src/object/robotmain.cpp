@@ -643,7 +643,7 @@ CRobotMain::CRobotMain(CApplication* app)
     m_visitLast   = EVENT_NULL;
     m_visitObject = 0;
     m_visitArrow  = 0;
-    m_audioTrack  = 0;
+    m_audioTrack  = "";
     m_audioRepeat = true;
     m_delayWriteMessage = 0;
     m_selectObject = 0;
@@ -1768,6 +1768,23 @@ void CRobotMain::ExecuteCmd(char *cmd)
             return;
         }
 
+        if (strcmp(cmd, "allbuildings") == 0)
+        {
+            g_build = -1;  // all buildings are available
+
+            m_eventQueue->AddEvent(Event(EVENT_UPDINTERFACE));
+            return;
+        }
+
+        if (strcmp(cmd, "all") == 0)
+        {
+            g_researchDone = -1;  // all research are done
+            g_build = -1;  // all buildings are available
+
+            m_eventQueue->AddEvent(Event(EVENT_UPDINTERFACE));
+            return;
+        }
+
         if (strcmp(cmd, "nolimit") == 0)
         {
             m_terrain->SetFlyingMaxHeight(280.0f);
@@ -2003,6 +2020,11 @@ void CRobotMain::ExecuteCmd(char *cmd)
     }
     if (strcmp(cmd, "speed8") == 0) {
         SetSpeed(8.0f);
+        UpdateSpeedLabel();
+	return;
+    }
+    if (strcmp(cmd, "crazy") == 0) {
+        SetSpeed(1000.0f);
         UpdateSpeedLabel();
 	return;
     }
@@ -2688,6 +2710,8 @@ CObject* CRobotMain::DetectObject(Math::Point pos)
         if (obj == nullptr) break;
 
         if (!obj->GetActif()) continue;
+        CObject* truck = obj->GetTruck();
+        if (truck != nullptr) if (!truck->GetActif()) continue;
         if (obj->GetProxyActivate()) continue;
 
         CObject* target = nullptr;
@@ -3454,6 +3478,7 @@ bool CRobotMain::EventFrame(const Event &event)
         {
             m_checkEndTime = m_time;
             CheckEndMission(true);
+            UpdateAudio(true);
         }
 
         if (m_winDelay > 0.0f && !m_editLock)
@@ -3643,7 +3668,7 @@ void CRobotMain::Convert()
             }
         }
 
-        if (Cmd(line, "EndMissionTake"))
+        if (Cmd(line, "EndMissionTake") || Cmd(line, "AudioChange"))
         {
             char* p = strstr(line, "pos=");
             if (p != 0)
@@ -3794,7 +3819,7 @@ void CRobotMain::CreateScene(bool soluce, bool fixScene, bool resetObject)
 
         FlushDisplayInfo();
         m_terrain->FlushMaterials();
-        m_audioTrack = 0;
+        m_audioTrack = "";
         m_audioRepeat = true;
         m_displayText->SetDelay(1.0f);
         m_displayText->SetEnable(true);
@@ -3802,6 +3827,7 @@ void CRobotMain::CreateScene(bool soluce, bool fixScene, bool resetObject)
         m_lockedSatCom = false;
         m_endingWinRank   = 0;
         m_endingLostRank  = 0;
+        m_audioChangeTotal = 0;
         m_endTakeTotal = 0;
         m_endTakeResearch = 0;
         m_endTakeWinDelay = 2.0f;
@@ -3954,11 +3980,44 @@ void CRobotMain::CreateScene(bool soluce, bool fixScene, bool resetObject)
         {
             m_displayText->SetDelay(OpFloat(line, "factor", 1.0f));
         }
+        
+        if (Cmd(line, "AudioChange") && !resetObject && m_version >= 2)
+        {
+            int i = m_audioChangeTotal;
+            if (i < 10)
+            {
+                m_audioChange[i].pos      = OpPos(line, "pos")*g_unit;
+                m_audioChange[i].dist     = OpFloat(line, "dist", 8.0f)*g_unit;
+                m_audioChange[i].type     = OpTypeObject(line, "type", OBJECT_NULL);
+                m_audioChange[i].min      = OpInt(line, "min", 1);
+                m_audioChange[i].max      = OpInt(line, "max", 9999);
+                m_audioChange[i].powermin = OpInt(line, "powermin", -1);
+                m_audioChange[i].powermax = OpInt(line, "powermax", 100);
+                OpString(line, "filename", m_audioChange[i].music);
+                m_audioChange[i].repeat   = OpInt(line, "repeat", 1);
+                m_audioChange[i].changed  = false;
+                m_sound->CacheMusic(m_audioChange[i].music);
+                m_audioChangeTotal ++;
+            }
+            continue;
+        }
 
         if (Cmd(line, "Audio") && !resetObject)
         {
-            m_audioTrack = OpInt(line, "track", 0);
+            if(m_version < 2) {
+                int trackid = OpInt(line, "track", 0);
+                if(trackid != 0) {
+                    std::stringstream filename;
+                    filename << "music" << std::setfill('0') << std::setw(3) << trackid << ".ogg";
+                    m_audioTrack = filename.str();
+                }
+            } else {
+                char trackname[100];
+                OpString(line, "filename", trackname);
+                m_audioTrack = trackname;
+            }
             m_audioRepeat = OpInt(line, "repeat", 1);
+            if(m_audioTrack != "") m_sound->CacheMusic(m_audioTrack);
         }
 
         if (Cmd(line, "AmbientColor") && !resetObject)
@@ -4188,6 +4247,7 @@ void CRobotMain::CreateScene(bool soluce, bool fixScene, bool resetObject)
             m_terrain->InitTextures(name, tt, dx, dy);
 
             m_terrainInitTextures = true;
+            continue;
         }
 
         if (Cmd(line, "TerrainInit") && !resetObject) {
@@ -4403,8 +4463,11 @@ void CRobotMain::CreateScene(bool soluce, bool fixScene, bool resetObject)
                 obj->SetShield(OpFloat(line, "shield", 1.0f));
                 obj->SetMagnifyDamage(OpFloat(line, "magnifyDamage", 1.0f));
                 obj->SetClip(OpInt(line, "clip", 1));
-                obj->SetCheckToken(m_version >= 2 ? trainer : OpInt(line, "manual", 1));
-                obj->SetManual(m_version >= 2 ? !trainer : OpInt(line, "manual", 0));
+                obj->SetCheckToken(m_version >= 2 ? trainer : OpInt(line, "checkToken", 1));
+                // SetManual will affect bot speed
+                                      if (type == OBJECT_MOBILEdr)  {
+                    obj->SetManual(m_version >= 2 ? !trainer : OpInt(line, "manual", 0));
+                }
 
                 if(m_version >= 2) {
                     Math::Vector zoom = OpDir(line, "zoom");
@@ -4613,12 +4676,19 @@ void CRobotMain::CreateScene(bool soluce, bool fixScene, bool resetObject)
             int i = m_endTakeTotal;
             if (i < 10)
             {
-                m_endTake[i].pos  = OpPos(line, "pos")*g_unit;
-                m_endTake[i].dist = OpFloat(line, "dist", 8.0f)*g_unit;
-                m_endTake[i].type = OpTypeObject(line, "type", OBJECT_NULL);
-                m_endTake[i].min  = OpInt(line, "min", 1);
-                m_endTake[i].max  = OpInt(line, "max", 9999);
-                m_endTake[i].lost = OpInt(line, "lost", -1);
+                m_endTake[i].pos      = OpPos(line, "pos")*g_unit;
+                m_endTake[i].dist     = OpFloat(line, "dist", 8.0f)*g_unit;
+                m_endTake[i].type     = OpTypeObject(line, "type", OBJECT_NULL);
+                m_endTake[i].min      = OpInt(line, "min", 1);
+                m_endTake[i].max      = OpInt(line, "max", 9999);
+                if (m_version >= 2) {
+                m_endTake[i].powermin = OpInt(line, "powermin", -1);
+                m_endTake[i].powermax = OpInt(line, "powermax", 100);
+                } else {
+                m_endTake[i].powermin = -1;
+                m_endTake[i].powermax = 100;
+                }
+                m_endTake[i].lost     = OpInt(line, "lost", -1);
                 m_endTake[i].immediat = OpInt(line, "immediat", 0);
                 OpString(line, "message", m_endTake[i].message);
                 m_endTakeTotal ++;
@@ -5647,7 +5717,7 @@ char* SearchLastDir(char *filename)
 
     while (p != filename)
     {
-        if (*(--p) == '/') return p;
+        if (*(--p) == '/' || *p == '\\') return p;
     }
     return 0;
 }
@@ -6545,6 +6615,73 @@ void CRobotMain::ResetCreate()
     }
 }
 
+//! Updates the audiotracks
+void CRobotMain::UpdateAudio(bool frame)
+{
+    CInstanceManager* iMan = CInstanceManager::GetInstancePointer();
+
+    for (int t = 0; t < m_audioChangeTotal; t++)
+    {
+        if(m_audioChange[t].changed) continue;
+
+        Math::Vector bPos = m_audioChange[t].pos;
+        bPos.y = 0.0f;
+
+        Math::Vector oPos;
+
+        int nb = 0;
+        for (int i = 0; i < 1000000; i++)
+        {
+            CObject* obj = static_cast<CObject*>(iMan->SearchInstance(CLASS_OBJECT, i));
+            if (obj == nullptr) break;
+
+            // Do not use GetActif () because an invisible worm (underground)
+            // should be regarded as existing here!
+            if (obj->GetLock()) continue;
+            if (obj->GetRuin()) continue;
+            if (!obj->GetEnable()) continue;
+
+            ObjectType type = obj->GetType();
+            if (type == OBJECT_SCRAP2 ||
+                type == OBJECT_SCRAP3 ||
+                type == OBJECT_SCRAP4 ||
+                type == OBJECT_SCRAP5)  // wastes?
+            {
+                type = OBJECT_SCRAP1;
+            }
+
+            if (type != m_audioChange[t].type)  continue;
+
+            float energyLevel = -1;
+            CObject* power = obj->GetPower();
+            if (power != nullptr) {
+                energyLevel = power->GetEnergy();
+                if (power->GetType() == OBJECT_ATOMIC) energyLevel *= 100;
+            }
+            if (energyLevel < m_audioChange[t].powermin || energyLevel > m_audioChange[t].powermax) continue;
+
+            if (obj->GetTruck() == 0)
+                oPos = obj->GetPosition(0);
+            else
+                oPos = obj->GetTruck()->GetPosition(0);
+
+            oPos.y = 0.0f;
+
+            if (Math::DistanceProjected(oPos, bPos) <= m_audioChange[t].dist)
+                nb ++;
+        }
+
+        if (nb >= m_audioChange[t].min &&
+            nb <= m_audioChange[t].max)
+        {
+            CLogger::GetInstancePointer()->Debug("Changing music...\n");
+            m_sound->StopMusic();
+            m_sound->PlayMusic(std::string(m_audioChange[t].music), m_audioChange[t].repeat);
+            m_audioChange[t].changed = true;
+        }
+    }
+}
+
 //! Checks if the mission is over
 Error CRobotMain::CheckEndMission(bool frame)
 {
@@ -6581,6 +6718,14 @@ Error CRobotMain::CheckEndMission(bool frame)
             }
 
             if (type != m_endTake[t].type)  continue;
+
+            float energyLevel = -1;
+            CObject* power = obj->GetPower();
+            if (power != nullptr) {
+                energyLevel = power->GetEnergy();
+                if (power->GetType() == OBJECT_ATOMIC) energyLevel *= 100;
+            }
+            if (energyLevel < m_endTake[t].powermin || energyLevel > m_endTake[t].powermax) continue;
 
             if (obj->GetTruck() == 0)
                 oPos = obj->GetPosition(0);
@@ -7045,11 +7190,12 @@ float CRobotMain::GetTracePrecision()
 //! Starts music with a mission
 void CRobotMain::StartMusic()
 {
-    if (m_audioTrack != 0)
+    CLogger::GetInstancePointer()->Debug("Starting music...\n");
+    if (m_audioTrack != "")
     {
         m_sound->StopMusic();
         m_sound->PlayMusic(m_audioTrack, m_audioRepeat);
-    }
+    }   
 }
 
 //! Removes hilite and tooltip

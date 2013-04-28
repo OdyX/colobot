@@ -220,7 +220,6 @@ std::string GetHelpFilename(const char *token)
 {
     if ( strcmp(token, "if"            ) == 0 )  return std::string("help/") + CApplication::GetInstancePointer()->GetLanguageChar() + std::string("/cbot/if.txt");
     if ( strcmp(token, "else"          ) == 0 )  return std::string("help/") + CApplication::GetInstancePointer()->GetLanguageChar() + std::string("/cbot/if.txt");
-    if ( strcmp(token, "repeat"        ) == 0 )  return std::string("help/") + CApplication::GetInstancePointer()->GetLanguageChar() + std::string("/cbot/repeat.txt");
     if ( strcmp(token, "for"           ) == 0 )  return std::string("help/") + CApplication::GetInstancePointer()->GetLanguageChar() + std::string("/cbot/for.txt");
     if ( strcmp(token, "while"         ) == 0 )  return std::string("help/") + CApplication::GetInstancePointer()->GetLanguageChar() + std::string("/cbot/while.txt");
     if ( strcmp(token, "do"            ) == 0 )  return std::string("help/") + CApplication::GetInstancePointer()->GetLanguageChar() + std::string("/cbot/do.txt");
@@ -262,8 +261,8 @@ std::string GetHelpFilename(const char *token)
     if ( strcmp(token, "move"          ) == 0 )  return std::string("help/") + CApplication::GetInstancePointer()->GetLanguageChar() + std::string("/cbot/move.txt");
     if ( strcmp(token, "turn"          ) == 0 )  return std::string("help/") + CApplication::GetInstancePointer()->GetLanguageChar() + std::string("/cbot/turn.txt");
     if ( strcmp(token, "goto"          ) == 0 )  return std::string("help/") + CApplication::GetInstancePointer()->GetLanguageChar() + std::string("/cbot/goto.txt");
-    if ( strcmp(token, "find"          ) == 0 )  return std::string("help/") + CApplication::GetInstancePointer()->GetLanguageChar() + std::string("/cbot/find.txt");
     if ( strcmp(token, "grab"          ) == 0 )  return std::string("help/") + CApplication::GetInstancePointer()->GetLanguageChar() + std::string("/cbot/grab.txt");
+    if ( strcmp(token, "build"         ) == 0 )  return std::string("help/") + CApplication::GetInstancePointer()->GetLanguageChar() + std::string("/cbot/build.txt");
     if ( strcmp(token, "drop"          ) == 0 )  return std::string("help/") + CApplication::GetInstancePointer()->GetLanguageChar() + std::string("/cbot/drop.txt");
     if ( strcmp(token, "sniff"         ) == 0 )  return std::string("help/") + CApplication::GetInstancePointer()->GetLanguageChar() + std::string("/cbot/sniff.txt");
     if ( strcmp(token, "receive"       ) == 0 )  return std::string("help/") + CApplication::GetInstancePointer()->GetLanguageChar() + std::string("/cbot/receive.txt");
@@ -380,8 +379,8 @@ bool IsFunction(const char *token)
     if ( strcmp(token, "move"         ) == 0 )  return true;
     if ( strcmp(token, "turn"         ) == 0 )  return true;
     if ( strcmp(token, "goto"         ) == 0 )  return true;
-    if ( strcmp(token, "find"         ) == 0 )  return true;
     if ( strcmp(token, "grab"         ) == 0 )  return true;
+    if ( strcmp(token, "build"         ) == 0 ) return true;
     if ( strcmp(token, "drop"         ) == 0 )  return true;
     if ( strcmp(token, "sniff"        ) == 0 )  return true;
     if ( strcmp(token, "receive"      ) == 0 )  return true;
@@ -432,7 +431,6 @@ const char* GetHelpText(const char *token)
 {
     if ( strcmp(token, "if"        ) == 0 )  return "if ( condition ) { bloc }";
     if ( strcmp(token, "else"      ) == 0 )  return "else { bloc }";
-    if ( strcmp(token, "repeat"    ) == 0 )  return "repeat ( number )";
     if ( strcmp(token, "for"       ) == 0 )  return "for ( before ; condition ; end )";
     if ( strcmp(token, "while"     ) == 0 )  return "while ( condition ) { bloc }";
     if ( strcmp(token, "do"        ) == 0 )  return "do { bloc } while ( condition );";
@@ -464,8 +462,8 @@ const char* GetHelpText(const char *token)
     if ( strcmp(token, "move"      ) == 0 )  return "move ( distance );";
     if ( strcmp(token, "turn"      ) == 0 )  return "turn ( angle );";
     if ( strcmp(token, "goto"      ) == 0 )  return "goto ( position, altitude );";
-    if ( strcmp(token, "find"      ) == 0 )  return "find ( cat );";
     if ( strcmp(token, "grab"      ) == 0 )  return "grab ( order );";
+    if ( strcmp(token, "build"      ) == 0 )  return "build ( category );";
     if ( strcmp(token, "drop"      ) == 0 )  return "drop ( order );";
     if ( strcmp(token, "sniff"     ) == 0 )  return "sniff ( );";
     if ( strcmp(token, "receive"   ) == 0 )  return "receive ( name, power );";
