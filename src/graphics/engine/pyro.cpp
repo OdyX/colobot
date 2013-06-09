@@ -89,13 +89,15 @@ bool CPyro::Create(PyroType type, CObject* obj, float force)
 
     DisplayError(type, obj);  // displays eventual messages
 
-    int i = 0;
-    // Copies all spheres of the object.
-    for (; i < 50; i++)
     {
-        if ( !obj->GetCrashSphere(i, m_crashSpherePos[i], m_crashSphereRadius[i]) )  break;
+        int i = 0;
+        // Copies all spheres of the object.
+        for (; i < 50; i++)
+        {
+            if ( !obj->GetCrashSphere(i, m_crashSpherePos[i], m_crashSphereRadius[i]) )  break;
+        }
+        m_crashSphereUsed = i;
     }
-    m_crashSphereUsed = i;
 
     // Calculates the size of the effect.
     if ( oType == OBJECT_ANT    ||
@@ -1555,7 +1557,7 @@ void CPyro::ExploStart()
     {
         int objRank = m_object->GetObjectRank(i);
         if ( objRank == -1 )  continue;
-        m_engine->ChangeSecondTexture(objRank, "dirty04.tga");
+        m_engine->ChangeSecondTexture(objRank, "dirty04.png");
 
         Math::Vector pos = m_object->GetPosition(i);
 
@@ -2399,3 +2401,4 @@ void CPyro::LightOperFrame(float rTime)
 
 
 } // namespace Gfx
+

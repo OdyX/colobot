@@ -15,7 +15,7 @@
 // * along with this program. If not, see  http://www.gnu.org/licenses/.
 
 /**
- * \file common/objman.h
+ * \file object/objman.h
  * \brief Instance manager for objects
  */
 
@@ -50,5 +50,4 @@ protected:
     CObject* m_table[MAX_OBJECTS];
     int usedCount;
 };
-
 

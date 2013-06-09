@@ -249,7 +249,15 @@ std::string GetHelpFilename(const char *token)
     if ( strcmp(token, "pow"           ) == 0 )  return std::string("help/") + CApplication::GetInstancePointer()->GetLanguageChar() + std::string("/cbot/expr.txt");
     if ( strcmp(token, "rand"          ) == 0 )  return std::string("help/") + CApplication::GetInstancePointer()->GetLanguageChar() + std::string("/cbot/expr.txt");
     if ( strcmp(token, "abs"           ) == 0 )  return std::string("help/") + CApplication::GetInstancePointer()->GetLanguageChar() + std::string("/cbot/expr.txt");
+    if ( strcmp(token, "getbuild"      ) == 0 )  return std::string("help/") + CApplication::GetInstancePointer()->GetLanguageChar() + std::string("/cbot/getbuild.txt");
+    if ( strcmp(token, "getresearchenable" ) == 0 )  return std::string("help/") + CApplication::GetInstancePointer()->GetLanguageChar() + std::string("/cbot/getresen.txt");
+    if ( strcmp(token, "getresearchdone"   ) == 0 )  return std::string("help/") + CApplication::GetInstancePointer()->GetLanguageChar() + std::string("/cbot/getresdo.txt");
     if ( strcmp(token, "retobject"     ) == 0 )  return std::string("help/") + CApplication::GetInstancePointer()->GetLanguageChar() + std::string("/cbot/retobj.txt");
+    if ( strcmp(token, "progfunc"       ) == 0 )  return std::string("help/") + CApplication::GetInstancePointer()->GetLanguageChar() + std::string("/cbot/factory.txt");
+    if ( strcmp(token, "busy"       ) == 0 )  return std::string("help/") + CApplication::GetInstancePointer()->GetLanguageChar() + std::string("/cbot/busy.txt");
+    if ( strcmp(token, "factory"       ) == 0 )  return std::string("help/") + CApplication::GetInstancePointer()->GetLanguageChar() + std::string("/cbot/factory.txt");
+    if ( strcmp(token, "research"      ) == 0 )  return std::string("help/") + CApplication::GetInstancePointer()->GetLanguageChar() + std::string("/cbot/research.txt");
+    if ( strcmp(token, "destroy"       ) == 0 )  return std::string("help/") + CApplication::GetInstancePointer()->GetLanguageChar() + std::string("/cbot/destroy.txt");
     if ( strcmp(token, "search"        ) == 0 )  return std::string("help/") + CApplication::GetInstancePointer()->GetLanguageChar() + std::string("/cbot/search.txt");
     if ( strcmp(token, "radar"         ) == 0 )  return std::string("help/") + CApplication::GetInstancePointer()->GetLanguageChar() + std::string("/cbot/radar.txt");
     if ( strcmp(token, "direction"     ) == 0 )  return std::string("help/") + CApplication::GetInstancePointer()->GetLanguageChar() + std::string("/cbot/direct.txt");
@@ -262,6 +270,7 @@ std::string GetHelpFilename(const char *token)
     if ( strcmp(token, "turn"          ) == 0 )  return std::string("help/") + CApplication::GetInstancePointer()->GetLanguageChar() + std::string("/cbot/turn.txt");
     if ( strcmp(token, "goto"          ) == 0 )  return std::string("help/") + CApplication::GetInstancePointer()->GetLanguageChar() + std::string("/cbot/goto.txt");
     if ( strcmp(token, "grab"          ) == 0 )  return std::string("help/") + CApplication::GetInstancePointer()->GetLanguageChar() + std::string("/cbot/grab.txt");
+    if ( strcmp(token, "canbuild"      ) == 0 )  return std::string("help/") + CApplication::GetInstancePointer()->GetLanguageChar() + std::string("/cbot/canbuild.txt");
     if ( strcmp(token, "build"         ) == 0 )  return std::string("help/") + CApplication::GetInstancePointer()->GetLanguageChar() + std::string("/cbot/build.txt");
     if ( strcmp(token, "drop"          ) == 0 )  return std::string("help/") + CApplication::GetInstancePointer()->GetLanguageChar() + std::string("/cbot/drop.txt");
     if ( strcmp(token, "sniff"         ) == 0 )  return std::string("help/") + CApplication::GetInstancePointer()->GetLanguageChar() + std::string("/cbot/sniff.txt");
@@ -366,7 +375,16 @@ bool IsFunction(const char *token)
     if ( strcmp(token, "pow"          ) == 0 )  return true;
     if ( strcmp(token, "rand"         ) == 0 )  return true;
     if ( strcmp(token, "abs"          ) == 0 )  return true;
+    if ( strcmp(token, "getbuild"     ) == 0 )  return true;
+    if ( strcmp(token, "getresearchenable" ) == 0 )  return true;
+    if ( strcmp(token, "getresearchdone"   ) == 0 )  return true;
+    if ( strcmp(token, "retobjectbyid") == 0 )  return true;
     if ( strcmp(token, "retobject"    ) == 0 )  return true;
+    if ( strcmp(token, "progfunc"     ) == 0 )  return true;
+    if ( strcmp(token, "busy"         ) == 0 )  return true;
+    if ( strcmp(token, "factory"      ) == 0 )  return true;
+    if ( strcmp(token, "research"     ) == 0 )  return true;
+    if ( strcmp(token, "destroy"      ) == 0 )  return true;
     if ( strcmp(token, "search"       ) == 0 )  return true;
     if ( strcmp(token, "radar"        ) == 0 )  return true;
     if ( strcmp(token, "detect"       ) == 0 )  return true;
@@ -380,7 +398,8 @@ bool IsFunction(const char *token)
     if ( strcmp(token, "turn"         ) == 0 )  return true;
     if ( strcmp(token, "goto"         ) == 0 )  return true;
     if ( strcmp(token, "grab"         ) == 0 )  return true;
-    if ( strcmp(token, "build"         ) == 0 ) return true;
+    if ( strcmp(token, "canbuild"     ) == 0 )  return true;
+    if ( strcmp(token, "build"        ) == 0 )  return true;
     if ( strcmp(token, "drop"         ) == 0 )  return true;
     if ( strcmp(token, "sniff"        ) == 0 )  return true;
     if ( strcmp(token, "receive"      ) == 0 )  return true;
@@ -449,7 +468,16 @@ const char* GetHelpText(const char *token)
     if ( strcmp(token, "pow"       ) == 0 )  return "pow ( x, y );";
     if ( strcmp(token, "rand"      ) == 0 )  return "rand ( );";
     if ( strcmp(token, "abs"       ) == 0 )  return "abs ( value );";
-    if ( strcmp(token, "retobject" ) == 0 )  return "retobject ( );";
+    if ( strcmp(token, "getbuild"  ) == 0 )  return "getbuild ( );";
+    if ( strcmp(token, "getresearchenable" ) == 0 )  return "getresearchenable ( );";
+    if ( strcmp(token, "getresearchdone" ) == 0 )  return "getresearchdone ( );";
+    if ( strcmp(token, "retobject" ) == 0 )  return "retobject ( rank );";
+    if ( strcmp(token, "retobjectbyid") == 0 )  return "retobjectbyid ( rank );";
+    if ( strcmp(token, "progfunc"  ) == 0 )  return "progfunc ( funcname );";
+    if ( strcmp(token, "busy"      ) == 0 )  return "object.busy ( );";
+    if ( strcmp(token, "factory"   ) == 0 )  return "object.factory ( cat, program );";
+    if ( strcmp(token, "research"  ) == 0 )  return "object.research ( type );";
+    if ( strcmp(token, "destroy"   ) == 0 )  return "object.destroy ( );";
     if ( strcmp(token, "search"    ) == 0 )  return "search ( );";
     if ( strcmp(token, "radar"     ) == 0 )  return "radar ( cat, angle, focus, min, max, sens );";
     if ( strcmp(token, "detect"    ) == 0 )  return "detect ( cat );";
@@ -463,7 +491,8 @@ const char* GetHelpText(const char *token)
     if ( strcmp(token, "turn"      ) == 0 )  return "turn ( angle );";
     if ( strcmp(token, "goto"      ) == 0 )  return "goto ( position, altitude );";
     if ( strcmp(token, "grab"      ) == 0 )  return "grab ( order );";
-    if ( strcmp(token, "build"      ) == 0 )  return "build ( category );";
+    if ( strcmp(token, "canbuild"  ) == 0 )  return "canbuild ( category );";
+    if ( strcmp(token, "build"     ) == 0 )  return "build ( category );";
     if ( strcmp(token, "drop"      ) == 0 )  return "drop ( order );";
     if ( strcmp(token, "sniff"     ) == 0 )  return "sniff ( );";
     if ( strcmp(token, "receive"   ) == 0 )  return "receive ( name, power );";
@@ -505,5 +534,4 @@ const char* GetHelpText(const char *token)
     if ( strcmp(token, "penwidth"  ) == 0 )  return "penwidth ( width );";
     return "";
 }
-
 

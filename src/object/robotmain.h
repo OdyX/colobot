@@ -191,7 +191,7 @@ const int AXIS_INVALID = -1;
 class CRobotMain : public CSingleton<CRobotMain>
 {
 public:
-    CRobotMain(CApplication* app);
+    CRobotMain(CApplication* app, bool loadProfile);
     ~CRobotMain();
 
     Gfx::CCamera* GetCamera();
@@ -265,6 +265,7 @@ public:
     void        ResetObject();
     void        ResetCreate();
     void        UpdateAudio(bool frame);
+    void        SetEndMission(Error result, float delay);
     Error       CheckEndMission(bool frame);
     void        CheckEndMessage(const char* message);
     int         GetObligatoryToken();
@@ -369,9 +370,11 @@ public:
     CObject*    IOReadObject(char *line, const char* filename, int objRank);
 
     int         CreateSpot(Math::Vector pos, Gfx::Color color);
-    
+
     void        SetNumericLocale();
     void        RestoreNumericLocale();
+
+    CObject*    GetSelect();
 
 protected:
     bool        EventFrame(const Event &event);
@@ -403,14 +406,13 @@ protected:
     void        DeleteAllObjects();
     void        UpdateInfoText();
     CObject*    SearchObject(ObjectType type);
-    CObject*    GetSelect();
     void        StartDisplayVisit(EventType event);
     void        FrameVisit(float rTime);
     void        StopDisplayVisit();
     void        ExecuteCmd(char *cmd);
     bool        TestGadgetQuantity(int rank);
     void        UpdateSpeedLabel();
-    
+
 
 protected:
     CApplication*       m_app;
@@ -468,6 +470,8 @@ protected:
     std::string     m_audioTrack;
     int             m_delayWriteMessage;
     int             m_movieInfoIndex;
+
+    CObject*        m_controller;
 
     //Level Checker flags
     bool            m_beginObject;
@@ -537,9 +541,10 @@ protected:
     int             m_endTakeTotal;
     EndTake         m_endTake[10];
     long            m_endTakeResearch;
+    bool            m_endTakeNever;
     float           m_endTakeWinDelay;
     float           m_endTakeLostDelay;
-    
+
     int             m_audioChangeTotal;
     AudioChange     m_audioChange[10];
 
@@ -548,10 +553,12 @@ protected:
     int             m_prohibitedTotal;
     char            m_prohibitedToken[100][20];
 
-    char            m_gamerName[100];
+    std::string     m_gamerName;
 
     int             m_freeBuild;        // constructible buildings
     int             m_freeResearch;     // researches possible
+
+    Error           m_missionResult;
 
     ShowLimit       m_showLimit[MAXSHOWLIMIT];
 
@@ -564,7 +571,7 @@ protected:
     Gfx::Color      m_colorRefWater;
     Gfx::Color      m_colorNewWater;
     float           m_colorShiftWater;
-    
+
     std::string     m_oldLocale;
 };
 

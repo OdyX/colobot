@@ -295,6 +295,7 @@ void InitializeRestext()
     stringsEvent[EVENT_OBJECT_MPOWER]       = "..power cell";
     stringsEvent[EVENT_OBJECT_BHELP]        = "Instructions for the mission (\\key help;)";
     stringsEvent[EVENT_OBJECT_BTAKEOFF]     = "Take off to finish the mission";
+    stringsEvent[EVENT_OBJECT_BDESTROY]     = "Destroy";
     stringsEvent[EVENT_OBJECT_BDERRICK]     = "Build a derrick";
     stringsEvent[EVENT_OBJECT_BSTATION]     = "Build a power station";
     stringsEvent[EVENT_OBJECT_BFACTORY]     = "Build a bot factory";
@@ -539,6 +540,7 @@ void InitializeRestext()
 
 
 
+    stringsErr[ERR_GENERIC]         = "Internal error - tell the developers";
     stringsErr[ERR_CMD]             = "Unknown command";
     stringsErr[ERR_MANIP_VEH]       = "Inappropriate bot";
     stringsErr[ERR_MANIP_FLY]       = "Impossible when flying";
@@ -622,6 +624,8 @@ void InitializeRestext()
     stringsErr[ERR_FLAG_CREATE]     = "Too many flags of this color (maximum 5)";
     stringsErr[ERR_FLAG_PROXY]      = "Too close to an existing flag";
     stringsErr[ERR_FLAG_DELETE]     = "No flag nearby";
+    stringsErr[ERR_DESTROY_NOTFOUND]= "Not found anything to destroy";
+    stringsErr[ERR_WRONG_OBJ]       = "Inappropriate object";
     stringsErr[ERR_MISSION_NOTERM]  = "The mission is not accomplished yet (press \\key help; for more details)";
     stringsErr[ERR_DELETEMOBILE]    = "Bot destroyed";
     stringsErr[ERR_DELETEBUILDING]  = "Building destroyed";
@@ -731,9 +735,9 @@ void InitializeRestext()
 
 static char         g_gamerName[100];
 
-void SetGlobalGamerName(char *name)
+void SetGlobalGamerName(std::string name)
 {
-    strcpy(g_gamerName, name);
+    strcpy(g_gamerName, name.c_str());
 }
 
 
@@ -916,3 +920,4 @@ bool GetResource(ResType type, int num, char* text)
     PutKeyName(text, tmpl);
     return true;
 }
+

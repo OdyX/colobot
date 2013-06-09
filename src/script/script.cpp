@@ -35,9 +35,14 @@
 #include "object/task/taskmanager.h"
 #include "object/objman.h"
 
+#include "object/auto/auto.h"
+#include "object/auto/autofactory.h"
+
 #include "physics/physics.h"
 
 #include "script/cbottoken.h"
+
+#include "sound/sound.h"
 
 #include "ui/interface.h"
 #include "ui/edit.h"
@@ -65,6 +70,11 @@ CBotTypResult CScript::cNull(CBotVar* &var, void* user)
     return CBotTypResult(CBotTypFloat);
 }
 
+CBotTypResult CScript::cClassNull(CBotVar* thisclass, CBotVar* &var)
+{
+    return CScript::cNull(var, nullptr);
+}
+
 // Compiling a procedure with a single real number.
 
 CBotTypResult CScript::cOneFloat(CBotVar* &var, void* user)
@@ -74,6 +84,11 @@ CBotTypResult CScript::cOneFloat(CBotVar* &var, void* user)
     var = var->GetNext();
     if ( var != 0 )  return CBotTypResult(CBotErrOverParam);
     return CBotTypResult(CBotTypFloat);
+}
+
+CBotTypResult CScript::cClassOneFloat(CBotVar* thisclass, CBotVar* &var)
+{
+    return CScript::cOneFloat(var, nullptr);
 }
 
 // Compiling a procedure with two real numbers.
@@ -143,6 +158,18 @@ CBotTypResult CScript::cString(CBotVar* &var, void* user)
     var = var->GetNext();
     if ( var != 0 )  return CBotTypResult(CBotErrOverParam);
     return CBotTypResult(CBotTypFloat);
+}
+
+// Compiling a procedure with a single string, returning string.
+
+CBotTypResult CScript::cStringString(CBotVar* &var, void* user)
+{
+    if ( var == 0 )  return CBotTypResult(CBotErrLowParam);
+    if ( var->GetType() != CBotTypString &&
+         var->GetType() >  CBotTypDouble )  return CBotTypResult(CBotErrBadNum);
+    var = var->GetNext();
+    if ( var != 0 )  return CBotTypResult(CBotErrOverParam);
+    return CBotTypResult(CBotTypString);
 }
 
 
@@ -313,6 +340,127 @@ bool CScript::rAbs(CBotVar* var, CBotVar* result, int& exception, void* user)
     return true;
 }
 
+// Compilation of the instruction "endmission(result, delay)"
+
+CBotTypResult CScript::cEndMission(CBotVar* &var, void* user)
+{
+    if ( var == 0 )  return CBotTypResult(CBotErrLowParam);
+    if ( var->GetType() > CBotTypDouble )  return CBotTypResult(CBotErrBadNum);
+    var = var->GetNext();
+    if ( var == 0 )  return CBotTypResult(CBotErrLowParam);
+    if ( var->GetType() > CBotTypDouble )  return CBotTypResult(CBotErrBadNum);
+    var = var->GetNext();
+    if ( var != 0 )  return CBotTypResult(CBotErrOverParam);
+    return CBotTypResult(CBotTypFloat);
+}
+
+// Instruction "endmission(result, delay)"
+
+bool CScript::rEndMission(CBotVar* var, CBotVar* result, int& exception, void* user)
+{
+    Error ended;
+    float delay;
+
+    ended = static_cast<Error>(var->GetValFloat());
+    var = var->GetNext();
+
+    delay = var->GetValFloat();
+
+    CRobotMain::GetInstancePointer()->SetEndMission(ended, delay);
+    return true;
+}
+
+// Compilation of the instruction "playmusic(filename, repeat)"
+
+CBotTypResult CScript::cPlayMusic(CBotVar* &var, void* user)
+{
+    if ( var == 0 )  return CBotTypResult(CBotErrLowParam);
+    if ( var->GetType() != CBotTypString )  return CBotTypResult(CBotErrBadNum);
+    var = var->GetNext();
+    if ( var == 0 )  return CBotTypResult(CBotErrLowParam);
+    if ( var->GetType() > CBotTypDouble )  return CBotTypResult(CBotErrBadNum);
+    var = var->GetNext();
+    if ( var != 0 )  return CBotTypResult(CBotErrOverParam);
+    return CBotTypResult(CBotTypFloat);
+}
+
+// Instruction "playmusic(filename, repeat)"
+
+bool CScript::rPlayMusic(CBotVar* var, CBotVar* result, int& exception, void* user)
+{
+    std::string filename;
+    CBotString cbs;
+    bool repeat;
+
+    cbs = var->GetValString();
+    filename = std::string(cbs);
+    var = var->GetNext();
+
+    repeat = var->GetValInt();
+
+    CApplication::GetInstancePointer()->GetSound()->StopMusic();
+    CApplication::GetInstancePointer()->GetSound()->PlayMusic(filename, repeat);
+    return true;
+}
+
+// Instruction "stopmusic()"
+
+bool CScript::rStopMusic(CBotVar* var, CBotVar* result, int& exception, void* user)
+{
+    CApplication::GetInstancePointer()->GetSound()->StopMusic();
+    return true;
+}
+
+// Instruction "getbuild()"
+
+bool CScript::rGetBuild(CBotVar* var, CBotVar* result, int& exception, void* user)
+{
+    result->SetValInt(g_build);
+    return true;
+}
+
+// Instruction "getresearchenable()"
+
+bool CScript::rGetResearchEnable(CBotVar* var, CBotVar* result, int& exception, void* user)
+{
+    result->SetValInt(g_researchEnable);
+    return true;
+}
+
+// Instruction "getresearchdone()"
+
+bool CScript::rGetResearchDone(CBotVar* var, CBotVar* result, int& exception, void* user)
+{
+    result->SetValInt(g_researchDone);
+    return true;
+}
+
+// Instruction "setbuild()"
+
+bool CScript::rSetBuild(CBotVar* var, CBotVar* result, int& exception, void* user)
+{
+    g_build = var->GetValInt();
+    CApplication::GetInstancePointer()->GetEventQueue()->AddEvent(Event(EVENT_UPDINTERFACE));
+    return true;
+}
+
+// Instruction "setresearchenable()"
+
+bool CScript::rSetResearchEnable(CBotVar* var, CBotVar* result, int& exception, void* user)
+{
+    g_researchEnable = var->GetValInt();
+    CApplication::GetInstancePointer()->GetEventQueue()->AddEvent(Event(EVENT_UPDINTERFACE));
+    return true;
+}
+
+// Instruction "setresearchdone()"
+
+bool CScript::rSetResearchDone(CBotVar* var, CBotVar* result, int& exception, void* user)
+{
+    g_researchDone = var->GetValInt();
+    CApplication::GetInstancePointer()->GetEventQueue()->AddEvent(Event(EVENT_UPDINTERFACE));
+    return true;
+}
 
 // Compilation of the instruction "retobject(rank)".
 
@@ -326,9 +474,9 @@ CBotTypResult CScript::cGetObject(CBotVar* &var, void* user)
     return CBotTypResult(CBotTypPointer, "object");
 }
 
-// Instruction "retobject(rank)".
+// Instruction "retobjectbyid(rank)".
 
-bool CScript::rGetObject(CBotVar* var, CBotVar* result, int& exception, void* user)
+bool CScript::rGetObjectById(CBotVar* var, CBotVar* result, int& exception, void* user)
 {
     CObject*    pObj;
     int         rank;
@@ -347,20 +495,427 @@ bool CScript::rGetObject(CBotVar* var, CBotVar* result, int& exception, void* us
     return true;
 }
 
-// Compilation of the instruction "destroy(rank[, exploType[, force]])".
+// Instruction "retobject(rank)".
 
-CBotTypResult CScript::cDestroy(CBotVar* &var, void* user)
+bool CScript::rGetObject(CBotVar* var, CBotVar* result, int& exception, void* user)
+{
+    CObject*    pObj;
+    int         rank;
+
+    rank = var->GetValInt();
+
+    pObj = static_cast<CObject*>(CInstanceManager::GetInstancePointer()->SearchInstance(CLASS_OBJECT, rank));
+    if ( pObj == 0 )
+    {
+        result->SetPointer(0);
+    }
+    else
+    {
+        result->SetPointer(pObj->GetBotVar());
+    }
+    return true;
+}
+
+
+// Instruction "progfunc(funcname)".
+
+bool CScript::rProgFunc(CBotVar* var, CBotVar* result, int& exception, void* user)
+{
+    CBotString  cbs;
+    const char* funcname;
+    std::string program;
+
+    cbs = var->GetValString();
+    funcname = cbs;
+
+    //TODO: Translation :)
+    program  = "extern void object::Auto()\n{\n\t\n\t//Automatically generated by progfunc(\"";
+    program += funcname;
+    program += "\");\n\t";
+    program += funcname;
+    program += "();\n\t\n}\n";
+
+    result->SetValString(program.c_str());
+
+    return true;
+}
+
+// Compilation of instruction "object.busy()"
+CBotTypResult CScript::cBusy(CBotVar* thisclass, CBotVar* &var)
+{
+    if ( var != 0 )  return CBotTypResult(CBotErrOverParam);
+    return CBotTypResult(CBotTypBoolean);
+}
+
+// Instruction "object.busy()"
+
+bool CScript::rBusy(CBotVar* thisclass, CBotVar* var, CBotVar* result, int& exception)
+{
+    exception = 0;
+
+    CBotVar* classVars = thisclass->GetItemList();  // "category"
+    classVars = classVars->GetNext();  // "position"
+    classVars = classVars->GetNext();  // "orientation"
+    classVars = classVars->GetNext();  // "pitch"
+    classVars = classVars->GetNext();  // "roll"
+    classVars = classVars->GetNext();  // "energyLevel"
+    classVars = classVars->GetNext();  // "shieldLevel"
+    classVars = classVars->GetNext();  // "temperature"
+    classVars = classVars->GetNext();  // "altitude"
+    classVars = classVars->GetNext();  // "lifeTime"
+    classVars = classVars->GetNext();  // "material"
+    classVars = classVars->GetNext();  // "energyCell"
+    classVars = classVars->GetNext();  // "load"
+    classVars = classVars->GetNext();  // "id"
+    int rank = classVars->GetValInt();
+    CObject* obj = CObjectManager::GetInstancePointer()->SearchInstance(rank);
+    CAuto* automat = obj->GetAuto();
+
+    if ( automat != nullptr )
+        result->SetValInt(automat->GetBusy());
+    else
+        exception = ERR_WRONG_OBJ;
+
+    return true;
+}
+
+bool CScript::rDestroy(CBotVar* thisclass, CBotVar* var, CBotVar* result, int& exception)
+{
+    exception = 0;
+    Error err;
+
+    CBotVar* classVars = thisclass->GetItemList();  // "category"
+    ObjectType thisType = static_cast<ObjectType>(classVars->GetValInt());
+    classVars = classVars->GetNext();  // "position"
+    classVars = classVars->GetNext();  // "orientation"
+    classVars = classVars->GetNext();  // "pitch"
+    classVars = classVars->GetNext();  // "roll"
+    classVars = classVars->GetNext();  // "energyLevel"
+    classVars = classVars->GetNext();  // "shieldLevel"
+    classVars = classVars->GetNext();  // "temperature"
+    classVars = classVars->GetNext();  // "altitude"
+    classVars = classVars->GetNext();  // "lifeTime"
+    classVars = classVars->GetNext();  // "material"
+    classVars = classVars->GetNext();  // "energyCell"
+    classVars = classVars->GetNext();  // "load"
+    classVars = classVars->GetNext();  // "id"
+    int rank = classVars->GetValInt();
+    CObject* obj = CObjectManager::GetInstancePointer()->SearchInstance(rank);
+    CAuto* automat = obj->GetAuto();
+
+    if ( thisType == OBJECT_DESTROYER )
+    {
+        err = automat->StartAction(0);
+    } else
+        err = ERR_WRONG_OBJ;
+
+    if ( err != ERR_OK )
+    {
+        result->SetValInt(err);  // return error
+//TODO:        if ( script->m_errMode == ERM_STOP )
+        if( true )
+        {
+            exception = err;
+            return false;
+        }
+        return true;
+    }
+
+    return true;
+}
+
+
+// Compilation of instruction "object.factory(cat, program)"
+
+CBotTypResult CScript::cFactory(CBotVar* thisclass, CBotVar* &var)
+{
+    if ( var == 0 )  return CBotTypResult(CBotErrLowParam);
+    if ( var->GetType() > CBotTypDouble )  return CBotTypResult(CBotErrBadNum);
+    var = var->GetNext();
+    if ( var != 0 )
+    {
+        if ( var->GetType() != CBotTypString )  return CBotTypResult(CBotErrBadNum);
+        var = var->GetNext();
+        if ( var != 0 )  return CBotTypResult(CBotErrOverParam);
+    }
+    return CBotTypResult(CBotTypFloat);
+}
+
+// Instruction "object.factory(cat, program)"
+
+bool CScript::rFactory(CBotVar* thisclass, CBotVar* var, CBotVar* result, int& exception)
+{
+    Error       err;
+
+    exception = 0;
+
+    ObjectType type = static_cast<ObjectType>(var->GetValInt());
+    var = var->GetNext();
+    CBotString cbs;
+    const char* program;
+    if ( var != 0 )
+    {
+        cbs = var->GetValString();
+        program = cbs;
+    }
+    else
+        program = "";
+
+    CBotVar* classVars = thisclass->GetItemList();  // "category"
+    ObjectType thisType = static_cast<ObjectType>(classVars->GetValInt());
+    classVars = classVars->GetNext();  // "position"
+    classVars = classVars->GetNext();  // "orientation"
+    classVars = classVars->GetNext();  // "pitch"
+    classVars = classVars->GetNext();  // "roll"
+    classVars = classVars->GetNext();  // "energyLevel"
+    classVars = classVars->GetNext();  // "shieldLevel"
+    classVars = classVars->GetNext();  // "temperature"
+    classVars = classVars->GetNext();  // "altitude"
+    classVars = classVars->GetNext();  // "lifeTime"
+    classVars = classVars->GetNext();  // "material"
+    classVars = classVars->GetNext();  // "energyCell"
+    classVars = classVars->GetNext();  // "load"
+    classVars = classVars->GetNext();  // "id"
+    int rank = classVars->GetValInt();
+    CObject* factory = CObjectManager::GetInstancePointer()->SearchInstance(rank);
+    CAutoFactory* automat = static_cast<CAutoFactory*>(factory->GetAuto());
+
+    if ( thisType == OBJECT_FACTORY )
+    {
+        bool bEnable = false;
+
+        if ( type == OBJECT_MOBILEwa )
+        {
+            bEnable = true;
+        }
+        if ( type == OBJECT_MOBILEta )
+        {
+            bEnable = g_researchDone&RESEARCH_TANK;
+        }
+        if ( type == OBJECT_MOBILEfa )
+        {
+            bEnable = g_researchDone&RESEARCH_FLY;
+        }
+        if ( type == OBJECT_MOBILEia )
+        {
+            bEnable = g_researchDone&RESEARCH_iPAW;
+        }
+
+        if ( type == OBJECT_MOBILEws )
+        {
+            bEnable = g_researchDone&RESEARCH_SNIFFER;
+        }
+        if ( type == OBJECT_MOBILEts )
+        {
+            bEnable = ( (g_researchDone&RESEARCH_SNIFFER) &&
+                        (g_researchDone&RESEARCH_TANK)    );
+        }
+        if ( type == OBJECT_MOBILEfs )
+        {
+            bEnable = ( (g_researchDone&RESEARCH_SNIFFER) &&
+                        (g_researchDone&RESEARCH_FLY)     );
+        }
+        if ( type == OBJECT_MOBILEis )
+        {
+            bEnable = ( (g_researchDone&RESEARCH_SNIFFER) &&
+                        (g_researchDone&RESEARCH_iPAW)    );
+        }
+
+        if ( type == OBJECT_MOBILEwc )
+        {
+            bEnable = g_researchDone&RESEARCH_CANON;
+        }
+        if ( type == OBJECT_MOBILEtc )
+        {
+            bEnable = ( (g_researchDone&RESEARCH_CANON) &&
+                        (g_researchDone&RESEARCH_TANK)  );
+        }
+        if ( type == OBJECT_MOBILEfc )
+        {
+            bEnable = ( (g_researchDone&RESEARCH_CANON) &&
+                        (g_researchDone&RESEARCH_FLY)   );
+        }
+        if ( type == OBJECT_MOBILEic )
+        {
+            bEnable = ( (g_researchDone&RESEARCH_CANON) &&
+                        (g_researchDone&RESEARCH_iPAW)  );
+        }
+
+        if ( type == OBJECT_MOBILEwi )
+        {
+            bEnable = g_researchDone&RESEARCH_iGUN;
+        }
+        if ( type == OBJECT_MOBILEti )
+        {
+            bEnable = ( (g_researchDone&RESEARCH_iGUN) &&
+                        (g_researchDone&RESEARCH_TANK) );
+        }
+        if ( type == OBJECT_MOBILEfi )
+        {
+            bEnable = ( (g_researchDone&RESEARCH_iGUN) &&
+                        (g_researchDone&RESEARCH_FLY)  );
+        }
+        if ( type == OBJECT_MOBILEii )
+        {
+            bEnable = ( (g_researchDone&RESEARCH_iGUN) &&
+                        (g_researchDone&RESEARCH_iPAW) );
+        }
+
+        if ( type == OBJECT_MOBILErt )
+        {
+            bEnable = ( (g_researchDone&RESEARCH_THUMP) &&
+                        (g_researchDone&RESEARCH_TANK)  );
+        }
+        if ( type == OBJECT_MOBILErc )
+        {
+            bEnable = ( (g_researchDone&RESEARCH_PHAZER) &&
+                        (g_researchDone&RESEARCH_TANK)   );
+        }
+        if ( type == OBJECT_MOBILErr )
+        {
+            bEnable = ( (g_researchDone&RESEARCH_RECYCLER) &&
+                        (g_researchDone&RESEARCH_TANK)     );
+        }
+        if ( type == OBJECT_MOBILErs )
+        {
+            bEnable = ( (g_researchDone&RESEARCH_SHIELD) &&
+                        (g_researchDone&RESEARCH_TANK)   );
+        }
+
+        if ( type == OBJECT_MOBILEsa )
+        {
+            bEnable = g_researchDone&RESEARCH_SUBM;
+        }
+
+        if ( bEnable )
+        {
+            if ( automat != nullptr )
+            {
+                err = automat->StartAction(type);
+                if ( err == ERR_OK ) automat->SetProgram(program);
+            }
+            else
+                err = ERR_GENERIC;
+        }
+        else
+            err = ERR_BUILD_DISABLED;
+    }
+    else
+        err = ERR_WRONG_OBJ;
+
+    if ( err != ERR_OK )
+    {
+        result->SetValInt(err);  // return error
+//TODO:        if ( script->m_errMode == ERM_STOP )
+        if( true )
+        {
+            exception = err;
+            return false;
+        }
+        return true;
+    }
+
+    return true;
+}
+
+// Instruction "object.research(type)"
+
+bool CScript::rResearch(CBotVar* thisclass, CBotVar* var, CBotVar* result, int& exception)
+{
+    Error       err;
+
+    exception = 0;
+
+    ResearchType type = static_cast<ResearchType>(var->GetValInt());
+
+    CBotVar* classVars = thisclass->GetItemList();  // "category"
+    ObjectType thisType = static_cast<ObjectType>(classVars->GetValInt());
+    classVars = classVars->GetNext();  // "position"
+    classVars = classVars->GetNext();  // "orientation"
+    classVars = classVars->GetNext();  // "pitch"
+    classVars = classVars->GetNext();  // "roll"
+    classVars = classVars->GetNext();  // "energyLevel"
+    classVars = classVars->GetNext();  // "shieldLevel"
+    classVars = classVars->GetNext();  // "temperature"
+    classVars = classVars->GetNext();  // "altitude"
+    classVars = classVars->GetNext();  // "lifeTime"
+    classVars = classVars->GetNext();  // "material"
+    classVars = classVars->GetNext();  // "energyCell"
+    classVars = classVars->GetNext();  // "load"
+    classVars = classVars->GetNext();  // "id"
+    int rank = classVars->GetValInt();
+    CObject* center = CObjectManager::GetInstancePointer()->SearchInstance(rank);
+    CAuto* automat = center->GetAuto();
+
+    if ( thisType == OBJECT_RESEARCH ||
+         thisType == OBJECT_LABO      )
+    {
+        bool ok = false;
+        if ( type == RESEARCH_iPAW       ||
+             type == RESEARCH_iGUN        )
+        {
+            if ( thisType != OBJECT_LABO )
+                err = ERR_WRONG_OBJ;
+            else
+                ok = true;
+        }
+        else
+        {
+            if ( thisType != OBJECT_RESEARCH )
+                err = ERR_WRONG_OBJ;
+            else
+                ok = true;
+        }
+        if ( ok )
+        {
+            bool bEnable = ( g_researchEnable & type );
+            if ( bEnable )
+            {
+                if ( automat != nullptr )
+                {
+                    err = automat->StartAction(type);
+                }
+                else
+                    err = ERR_GENERIC;
+            }
+            else
+                err = ERR_BUILD_DISABLED;
+        }
+    }
+    else
+        err = ERR_WRONG_OBJ;
+
+    if ( err != ERR_OK )
+    {
+        result->SetValInt(err);  // return error
+//TODO:        if ( script->m_errMode == ERM_STOP )
+        if( true )
+        {
+            exception = err;
+            return false;
+        }
+        return true;
+    }
+
+    return true;
+}
+
+// Compilation of the instruction "delete(rank[, exploType[, force]])".
+
+CBotTypResult CScript::cDelete(CBotVar* &var, void* user)
 {
     if ( var == 0 )  return CBotTypResult(CBotErrLowParam);
 
     if ( var->GetType() > CBotTypDouble )  return CBotTypResult(CBotErrBadNum);
     var = var->GetNext();
 
-    if ( var != 0 ) {
+    if ( var != 0 )
+    {
         if ( var->GetType() != CBotTypInt ) return CBotTypResult(CBotErrBadNum);
         var = var->GetNext();
 
-        if ( var != 0 ) {
+        if ( var != 0 )
+        {
             if ( var->GetType() > CBotTypDouble ) return CBotTypResult(CBotErrBadNum);
             var = var->GetNext();
         }
@@ -371,9 +926,9 @@ CBotTypResult CScript::cDestroy(CBotVar* &var, void* user)
     return CBotTypResult(CBotTypFloat);
 }
 
-// Instruction "destroy(rank[, exploType[, force]])".
+// Instruction "delete(rank[, exploType[, force]])".
 
-bool CScript::rDestroy(CBotVar* var, CBotVar* result, int& exception, void* user)
+bool CScript::rDelete(CBotVar* var, CBotVar* result, int& exception, void* user)
 {
     CObject*    pObj;
     int         rank;
@@ -382,10 +937,12 @@ bool CScript::rDestroy(CBotVar* var, CBotVar* result, int& exception, void* user
 
     rank = var->GetValInt();
     var->GetNext();
-    if ( var != 0 ) {
+    if ( var != 0 )
+    {
         exploType = var->GetValInt();
         var->GetNext();
-        if ( var != 0 ) {
+        if ( var != 0 )
+        {
             force = var->GetValFloat();
         }
     }
@@ -397,9 +954,12 @@ bool CScript::rDestroy(CBotVar* var, CBotVar* result, int& exception, void* user
     }
     else
     {
-        if ( exploType ) {
+        if ( exploType )
+        {
             pObj->ExploObject(static_cast<ExploType>(exploType), force);
-        } else {
+        }
+        else
+        {
             pObj->DeleteObject(false);
         }
     }
@@ -588,9 +1148,10 @@ bool CScript::rRadar(CBotVar* var, CBotVar* result, int& exception, void* user)
     RadarFilter filter;
     float       best, minDist, maxDist, sens, iAngle, angle, focus, d, a;
     int         type, oType, i;
-    bool        bArray;
+    bool        bArray = false;
 
     type    = OBJECT_NULL;
+    array   = 0;
     angle   = 0.0f;
     focus   = Math::PI*2.0f;
     minDist = 0.0f*g_unit;
@@ -668,7 +1229,7 @@ bool CScript::rRadar(CBotVar* var, CBotVar* result, int& exception, void* user)
         if ( pObj->GetProxyActivate() )  continue;
 
         oType = pObj->GetType();
-        if ( oType == OBJECT_TOTO )  continue;
+        if ( oType == OBJECT_TOTO || oType == OBJECT_CONTROLLER )  continue;
 
         if ( oType == OBJECT_RUINmobilew2 ||
              oType == OBJECT_RUINmobilet1 ||
@@ -807,7 +1368,7 @@ bool CScript::rDetect(CBotVar* var, CBotVar* result, int& exception, void* user)
     RadarFilter filter;
     float       bGoal, best, minDist, maxDist, sens, iAngle, angle, focus, d, a;
     int         type, oType, i;
-    bool        bArray;
+    bool        bArray = false;
     Error       err;
 
     exception = 0;
@@ -815,6 +1376,7 @@ bool CScript::rDetect(CBotVar* var, CBotVar* result, int& exception, void* user)
     if ( script->m_primaryTask == 0 )  // no task in progress?
     {
         type    = OBJECT_NULL;
+        array   = 0;
         angle   = 0.0f;
         focus   = 45.0f*Math::PI/180.0f;
         minDist = 0.0f*g_unit;
@@ -1003,8 +1565,65 @@ bool CScript::rDirection(CBotVar* var, CBotVar* result, int& exception, void* us
     return true;
 }
 
+// compilation of instruction "canbuild ( category );"
+
+CBotTypResult CScript::cCanBuild(CBotVar* &var, void* user)
+{
+    if ( var == 0 )  return CBotTypResult(CBotErrLowParam);
+    if ( var->GetType() > CBotTypDouble )  return CBotTypResult(CBotErrBadNum);
+    var = var->GetNext();
+    if ( var != 0 )  return CBotTypResult(CBotErrOverParam);
+    return CBotTypResult(CBotTypBoolean);
+}
+
+// Instruction "canbuid ( category );"
+// returns true if this building can be built
+
+bool CScript::rCanBuild(CBotVar* var, CBotVar* result, int& exception, void* user)
+{
+    ObjectType category  = static_cast<ObjectType>(var->GetValInt()); //get category parameter
+    exception = 0;
+
+    bool can = false;
+
+    if ( (category == OBJECT_DERRICK   && (g_build & BUILD_DERRICK))   ||
+         (category == OBJECT_FACTORY   && (g_build & BUILD_FACTORY))   ||
+         (category == OBJECT_STATION   && (g_build & BUILD_STATION))   ||
+         (category == OBJECT_CONVERT   && (g_build & BUILD_CONVERT))   ||
+         (category == OBJECT_REPAIR    && (g_build & BUILD_REPAIR))    ||
+         (category == OBJECT_TOWER     && (g_build & BUILD_TOWER))     ||
+         (category == OBJECT_RESEARCH  && (g_build & BUILD_RESEARCH))  ||
+         (category == OBJECT_RADAR     && (g_build & BUILD_RADAR))     ||
+         (category == OBJECT_ENERGY    && (g_build & BUILD_ENERGY))    ||
+         (category == OBJECT_LABO      && (g_build & BUILD_LABO))      ||
+         (category == OBJECT_NUCLEAR   && (g_build & BUILD_NUCLEAR))   ||
+         (category == OBJECT_INFO      && (g_build & BUILD_INFO))      ||
+         (category == OBJECT_PARA      && (g_build & BUILD_PARA))      ||
+         (category == OBJECT_DESTROYER && (g_build & BUILD_DESTROYER)))
+    {
+
+        //if we want to build not researched one
+        if ( (category == OBJECT_TOWER   && !(g_researchDone & RESEARCH_TOWER)) ||
+             (category == OBJECT_NUCLEAR && !(g_researchDone & RESEARCH_ATOMIC))
+            )
+        {
+            can = false;
+        }
+        else
+        {
+            can = true;
+        }
+
+    }
+
+    result->SetValInt(can);
+
+
+    return true;
+}
+
 // Instruction "build(type)"
-// draws error if can not build (wher errormode stop), otherwise 0 <- 1
+// draws error if can not build (wher errormode stop), otherwise 0 <- error
 
 bool CScript::rBuild(CBotVar* var, CBotVar* result, int& exception, void* user)
 {
@@ -1012,7 +1631,7 @@ bool CScript::rBuild(CBotVar* var, CBotVar* result, int& exception, void* user)
     CObject*    pThis = static_cast<CObject *>(user);
     ObjectType  oType;
     ObjectType  category;
-    Error       err;
+    Error       err = ERR_BUILD_DISABLED;
 
     exception = 0;
 
@@ -1027,9 +1646,7 @@ bool CScript::rBuild(CBotVar* var, CBotVar* result, int& exception, void* user)
     }
     else
     {
-        category  = static_cast<ObjectType>(var->GetValInt()); //get category parameter
-
-        //if we want to produce one of these buildings
+        category = static_cast<ObjectType>(var->GetValInt()); //get category parameter
         if ( (category == OBJECT_DERRICK   && (g_build & BUILD_DERRICK))   ||
              (category == OBJECT_FACTORY   && (g_build & BUILD_FACTORY))   ||
              (category == OBJECT_STATION   && (g_build & BUILD_STATION))   ||
@@ -1041,34 +1658,39 @@ bool CScript::rBuild(CBotVar* var, CBotVar* result, int& exception, void* user)
              (category == OBJECT_ENERGY    && (g_build & BUILD_ENERGY))    ||
              (category == OBJECT_LABO      && (g_build & BUILD_LABO))      ||
              (category == OBJECT_NUCLEAR   && (g_build & BUILD_NUCLEAR))   ||
-             (category == OBJECT_INFO      && (g_build & BUILD_INFO  ))    ||
-             (category == OBJECT_PARA      && (g_build & BUILD_PARA )))
+             (category == OBJECT_INFO      && (g_build & BUILD_INFO))      ||
+             (category == OBJECT_PARA      && (g_build & BUILD_PARA))      ||
+             (category == OBJECT_DESTROYER && (g_build & BUILD_DESTROYER)))
         {
 
-            //if we want to build  not researched one
-            if ( (category == OBJECT_TOWER && !(g_researchDone & RESEARCH_TOWER)) ||
+            //if we want to build not researched one
+            if ( (category == OBJECT_TOWER   && !(g_researchDone & RESEARCH_TOWER)) ||
                  (category == OBJECT_NUCLEAR && !(g_researchDone & RESEARCH_ATOMIC))
                 )
             {
                 err = ERR_BUILD_RESEARCH;
             }
-            else if (script->m_primaryTask == 0) //if we have no other tasks
+            else
             {
-                script->m_primaryTask = new CTaskManager(script->m_object);
-                err = script->m_primaryTask->StartTaskBuild(category);
-
-                if (err != ERR_OK)
-                {
-                    delete script->m_primaryTask;
-                    script->m_primaryTask = 0;
-                }
+                err = ERR_OK;
             }
 
         }
-        else //if we can't build this object
+
+        if (err == ERR_OK && script->m_primaryTask == 0) //if we can build and no task is present
         {
-            err = ERR_BUILD_DISABLED;
+            script->m_primaryTask = new CTaskManager(script->m_object);
+            err = script->m_primaryTask->StartTaskBuild(category);
+
+            if (err != ERR_OK)
+            {
+                delete script->m_primaryTask;
+                script->m_primaryTask = 0;
+            }
         }
+        //When script is waiting for finishing this task, it sets ERR_OK, and continues executing Process
+        //without creating new task. I think, there was a problem with previous version in release configuration
+        //It did not init error variable in this situation, and code tried to use variable with trash inside
     }
 
     if ( err != ERR_OK )
@@ -1095,13 +1717,17 @@ CBotTypResult CScript::cProduce(CBotVar* &var, void* user)
 
     if ( var == 0 )  return CBotTypResult(CBotErrLowParam);
 
-    if ( var->GetType() <= CBotTypDouble ) {
+    if ( var->GetType() <= CBotTypDouble )
+    {
         var = var->GetNext();
-        if( var != 0 ) {
+        if( var != 0 )
+        {
             if ( var->GetType() > CBotTypDouble )  return CBotTypResult(CBotErrBadNum);
             var = var->GetNext();
         }
-    } else {
+    }
+    else
+    {
         ret = cPoint(var, user);
         if ( ret.GetType() != 0 )  return ret;
 
@@ -1113,11 +1739,13 @@ CBotTypResult CScript::cProduce(CBotVar* &var, void* user)
         if ( var->GetType() > CBotTypDouble )  return CBotTypResult(CBotErrBadNum);
         var = var->GetNext();
 
-        if ( var != 0 ) {
+        if ( var != 0 )
+        {
             if ( var->GetType() != CBotTypString )  return CBotTypResult(CBotErrBadString);
             var = var->GetNext();
 
-            if ( var != 0 ) {
+            if ( var != 0 )
+            {
                 if ( var->GetType() > CBotTypDouble )  return CBotTypResult(CBotErrBadNum);
                 var = var->GetNext();
             }
@@ -1144,7 +1772,8 @@ bool CScript::rProduce(CBotVar* var, CBotVar* result, int& exception, void* user
     ObjectType  type;
     float       power;
 
-    if ( var->GetType() <= CBotTypDouble ) {
+    if ( var->GetType() <= CBotTypDouble )
+    {
         type = static_cast<ObjectType>(var->GetValInt());
         var = var->GetNext();
 
@@ -1159,7 +1788,9 @@ bool CScript::rProduce(CBotVar* var, CBotVar* result, int& exception, void* user
             power = -1.0f;
 
         name = "";
-    } else {
+    }
+    else
+    {
         if ( !GetPoint(var, exception, pos) )  return true;
 
         angle = var->GetValFloat()*Math::PI/180.0f;
@@ -1168,16 +1799,22 @@ bool CScript::rProduce(CBotVar* var, CBotVar* result, int& exception, void* user
         type = static_cast<ObjectType>(var->GetValInt());
         var = var->GetNext();
 
-        if ( var != 0 ) {
+        if ( var != 0 )
+        {
             cbs = var->GetValString();
             name = cbs;
             var = var->GetNext();
-            if ( var != 0 ) {
+            if ( var != 0 )
+            {
                 power = var->GetValFloat();
-            } else {
+            }
+            else
+            {
                 power = -1.0f;
             }
-        } else {
+        }
+        else
+        {
             name = "";
             power = -1.0f;
         }
@@ -1224,12 +1861,11 @@ bool CScript::rProduce(CBotVar* var, CBotVar* result, int& exception, void* user
         }
         object->SetActivity(false);
     }
-    else
-    if ( type == OBJECT_MOTHER ||
-         type == OBJECT_ANT    ||
-         type == OBJECT_SPIDER ||
-         type == OBJECT_BEE    ||
-         type == OBJECT_WORM   )
+    else if ( type == OBJECT_MOTHER ||
+              type == OBJECT_ANT    ||
+              type == OBJECT_SPIDER ||
+              type == OBJECT_BEE    ||
+              type == OBJECT_WORM   )
     {
         CObject*    egg;
 
@@ -1248,30 +1884,29 @@ bool CScript::rProduce(CBotVar* var, CBotVar* result, int& exception, void* user
         }
         object->SetActivity(false);
     }
-    else
-    if ( type == OBJECT_PORTICO  ||
-         type == OBJECT_BASE     ||
-         type == OBJECT_DERRICK  ||
-         type == OBJECT_FACTORY  ||
-         type == OBJECT_STATION  ||
-         type == OBJECT_CONVERT  ||
-         type == OBJECT_REPAIR   ||
-         type == OBJECT_DESTROYER||
-         type == OBJECT_TOWER    ||
-         type == OBJECT_NEST     ||
-         type == OBJECT_RESEARCH ||
-         type == OBJECT_RADAR    ||
-         type == OBJECT_INFO     ||
-         type == OBJECT_ENERGY   ||
-         type == OBJECT_LABO     ||
-         type == OBJECT_NUCLEAR  ||
-         type == OBJECT_PARA     ||
-         type == OBJECT_SAFE     ||
-         type == OBJECT_HUSTON   ||
-         type == OBJECT_TARGET1  ||
-         type == OBJECT_TARGET2  ||
-         type == OBJECT_START    ||
-         type == OBJECT_END      )
+    else if ( type == OBJECT_PORTICO  ||
+              type == OBJECT_BASE     ||
+              type == OBJECT_DERRICK  ||
+              type == OBJECT_FACTORY  ||
+              type == OBJECT_STATION  ||
+              type == OBJECT_CONVERT  ||
+              type == OBJECT_REPAIR   ||
+              type == OBJECT_DESTROYER||
+              type == OBJECT_TOWER    ||
+              type == OBJECT_NEST     ||
+              type == OBJECT_RESEARCH ||
+              type == OBJECT_RADAR    ||
+              type == OBJECT_INFO     ||
+              type == OBJECT_ENERGY   ||
+              type == OBJECT_LABO     ||
+              type == OBJECT_NUCLEAR  ||
+              type == OBJECT_PARA     ||
+              type == OBJECT_SAFE     ||
+              type == OBJECT_HUSTON   ||
+              type == OBJECT_TARGET1  ||
+              type == OBJECT_TARGET2  ||
+              type == OBJECT_START    ||
+              type == OBJECT_END      )
     {
         object = new CObject();
         if ( !object->CreateBuilding(pos, angle, 0, type) )
@@ -1283,12 +1918,11 @@ bool CScript::rProduce(CBotVar* var, CBotVar* result, int& exception, void* user
         object->SetActivity(false);
         script->m_main->CreateShortcuts();
     }
-    else
-    if ( type == OBJECT_FLAGb ||
-         type == OBJECT_FLAGr ||
-         type == OBJECT_FLAGg ||
-         type == OBJECT_FLAGy ||
-         type == OBJECT_FLAGv )
+    else if ( type == OBJECT_FLAGb ||
+              type == OBJECT_FLAGr ||
+              type == OBJECT_FLAGg ||
+              type == OBJECT_FLAGy ||
+              type == OBJECT_FLAGv )
     {
         object = new CObject();
         if ( !object->CreateFlag(pos, angle, type) )
@@ -1299,38 +1933,37 @@ bool CScript::rProduce(CBotVar* var, CBotVar* result, int& exception, void* user
         }
         object->SetActivity(false);
     }
-    else
-    if ( type == OBJECT_HUMAN    ||
-         type == OBJECT_TECH     ||
-         type == OBJECT_TOTO     ||
-         type == OBJECT_MOBILEfa ||
-         type == OBJECT_MOBILEta ||
-         type == OBJECT_MOBILEwa ||
-         type == OBJECT_MOBILEia ||
-         type == OBJECT_MOBILEfc ||
-         type == OBJECT_MOBILEtc ||
-         type == OBJECT_MOBILEwc ||
-         type == OBJECT_MOBILEic ||
-         type == OBJECT_MOBILEfi ||
-         type == OBJECT_MOBILEti ||
-         type == OBJECT_MOBILEwi ||
-         type == OBJECT_MOBILEii ||
-         type == OBJECT_MOBILEfs ||
-         type == OBJECT_MOBILEts ||
-         type == OBJECT_MOBILEws ||
-         type == OBJECT_MOBILEis ||
-         type == OBJECT_MOBILErt ||
-         type == OBJECT_MOBILErc ||
-         type == OBJECT_MOBILErr ||
-         type == OBJECT_MOBILErs ||
-         type == OBJECT_MOBILEsa ||
-         type == OBJECT_MOBILEtg ||
-         type == OBJECT_MOBILEft ||
-         type == OBJECT_MOBILEtt ||
-         type == OBJECT_MOBILEwt ||
-         type == OBJECT_MOBILEit ||
-         type == OBJECT_MOBILEdr ||
-         type == OBJECT_APOLLO2  )
+    else if ( type == OBJECT_HUMAN    ||
+              type == OBJECT_TECH     ||
+              type == OBJECT_TOTO     ||
+              type == OBJECT_MOBILEfa ||
+              type == OBJECT_MOBILEta ||
+              type == OBJECT_MOBILEwa ||
+              type == OBJECT_MOBILEia ||
+              type == OBJECT_MOBILEfc ||
+              type == OBJECT_MOBILEtc ||
+              type == OBJECT_MOBILEwc ||
+              type == OBJECT_MOBILEic ||
+              type == OBJECT_MOBILEfi ||
+              type == OBJECT_MOBILEti ||
+              type == OBJECT_MOBILEwi ||
+              type == OBJECT_MOBILEii ||
+              type == OBJECT_MOBILEfs ||
+              type == OBJECT_MOBILEts ||
+              type == OBJECT_MOBILEws ||
+              type == OBJECT_MOBILEis ||
+              type == OBJECT_MOBILErt ||
+              type == OBJECT_MOBILErc ||
+              type == OBJECT_MOBILErr ||
+              type == OBJECT_MOBILErs ||
+              type == OBJECT_MOBILEsa ||
+              type == OBJECT_MOBILEtg ||
+              type == OBJECT_MOBILEft ||
+              type == OBJECT_MOBILEtt ||
+              type == OBJECT_MOBILEwt ||
+              type == OBJECT_MOBILEit ||
+              type == OBJECT_MOBILEdr ||
+              type == OBJECT_APOLLO2  )
     {
         object = new CObject();
         if ( !object->CreateVehicle(pos, angle, type, power, false, false) )
@@ -1349,8 +1982,9 @@ bool CScript::rProduce(CBotVar* var, CBotVar* result, int& exception, void* user
         }
         object->SetLock(false);  // vehicle useable
         // SetManual will affect bot speed
-        if (type == OBJECT_MOBILEdr) {
-            object->SetManual(true); 
+        if (type == OBJECT_MOBILEdr)
+        {
+            object->SetManual(true);
         }
         object->SetActivity(true);
         script->m_main->CreateShortcuts();
@@ -1361,8 +1995,11 @@ bool CScript::rProduce(CBotVar* var, CBotVar* result, int& exception, void* user
         return true;
     }
 
-    object->ReadProgram(0, static_cast<const char*>(name));
-    object->RunProgram(0);
+    if (name[0] != 0)
+    {
+        object->ReadProgram(0, static_cast<const char*>(name));
+        object->RunProgram(0);
+    }
 
     result->SetValInt(0);  // no error
     return true;
@@ -2391,8 +3028,8 @@ bool CScript::rAim(CBotVar* var, CBotVar* result, int& exception, void* user)
     {
         script->m_primaryTask = new CTaskManager(script->m_object);
         x = var->GetValFloat();
-    	var = var->GetNext();
-    	var == 0 ? y=0.0f : y=var->GetValFloat();
+        var = var->GetNext();
+        var == 0 ? y=0.0f : y=var->GetValFloat();
         err = script->m_primaryTask->StartTaskGunGoal(x*Math::PI/180.0f, y*Math::PI/180.0f);
         if ( err != ERR_OK )
         {
@@ -2897,8 +3534,21 @@ void CScript::InitFonctions()
     CBotProgram::AddFunction("rand",      rRand,      CScript::cNull);
     CBotProgram::AddFunction("abs",       rAbs,       CScript::cOneFloat);
 
+    CBotProgram::AddFunction("endmission",rEndMission,CScript::cEndMission);
+    CBotProgram::AddFunction("playmusic", rPlayMusic ,CScript::cPlayMusic);
+    CBotProgram::AddFunction("stopmusic", rStopMusic ,CScript::cNull);
+
+    CBotProgram::AddFunction("getbuild",          rGetBuild,          CScript::cNull);
+    CBotProgram::AddFunction("getresearchenable", rGetResearchEnable, CScript::cNull);
+    CBotProgram::AddFunction("getresearchdone",   rGetResearchDone,   CScript::cNull);
+    CBotProgram::AddFunction("setbuild",          rSetBuild,          CScript::cOneFloat);
+    CBotProgram::AddFunction("setresearchenable", rSetResearchEnable, CScript::cOneFloat);
+    CBotProgram::AddFunction("setresearchdone",   rSetResearchDone,   CScript::cOneFloat);
+
+    CBotProgram::AddFunction("progfunc",  rProgFunc,  CScript::cStringString);
     CBotProgram::AddFunction("retobject", rGetObject, CScript::cGetObject);
-    CBotProgram::AddFunction("destroy",   rDestroy,   CScript::cDestroy);
+    CBotProgram::AddFunction("retobjectbyid", rGetObjectById, CScript::cGetObject);
+    CBotProgram::AddFunction("delete",    rDelete,    CScript::cDelete);
     CBotProgram::AddFunction("search",    rSearch,    CScript::cSearch);
     CBotProgram::AddFunction("radar",     rRadar,     CScript::cRadar);
     CBotProgram::AddFunction("detect",    rDetect,    CScript::cDetect);
@@ -2939,6 +3589,7 @@ void CScript::InitFonctions()
     CBotProgram::AddFunction("pencolor",  rPenColor,  CScript::cOneFloat);
     CBotProgram::AddFunction("penwidth",  rPenWidth,  CScript::cOneFloat);
 
+    CBotProgram::AddFunction("canbuild", rCanBuild, CScript::cCanBuild);
     CBotProgram::AddFunction("build", rBuild, CScript::cOneFloat);
 
 }
@@ -3131,7 +3782,7 @@ bool CScript::Compile()
     {
         if ( liste.GetSize() == 0 )
         {
-            strcpy(m_title, "<sans nom>");
+            strcpy(m_title, "<extern missing>");
         }
         else
         {
@@ -3168,7 +3819,7 @@ bool CScript::Compile()
         {
             m_cursor1 = m_cursor2 = 0;
         }
-        strcpy(m_title, "<erreur>");
+        strcpy(m_title, "<error>");
         return false;
     }
 }
@@ -3407,7 +4058,7 @@ void PutList(const char *baseName, bool bArray, CBotVar *var, Ui::CList *list, i
     if ( var == 0 && baseName[0] != 0 )
     {
         sprintf(buffer, "%s = null;", baseName);
-        list->SetName(rankList++, buffer);
+        list->SetItemName(rankList++, buffer);
         return;
     }
 
@@ -3449,7 +4100,7 @@ void PutList(const char *baseName, bool bArray, CBotVar *var, Ui::CList *list, i
             value = pStatic->GetValString();
             p = value;
             sprintf(buffer, "%s = %s;", varName, p);
-            list->SetName(rankList++, buffer);
+            list->SetItemName(rankList++, buffer);
         }
         else if ( type == CBotTypString )
         {
@@ -3457,7 +4108,7 @@ void PutList(const char *baseName, bool bArray, CBotVar *var, Ui::CList *list, i
             value = pStatic->GetValString();
             p = value;
             sprintf(buffer, "%s = \"%s\";", varName, p);
-            list->SetName(rankList++, buffer);
+            list->SetItemName(rankList++, buffer);
         }
         else if ( type == CBotTypArrayPointer )
         {
@@ -3473,7 +4124,7 @@ void PutList(const char *baseName, bool bArray, CBotVar *var, Ui::CList *list, i
         else
         {
             sprintf(buffer, "%s = ?;", varName);
-            list->SetName(rankList++, buffer);
+            list->SetItemName(rankList++, buffer);
         }
 
         index ++;
@@ -3832,13 +4483,20 @@ void CScript::New(Ui::CEdit* edit, const char* name)
 
 // Provided a script for all parts.
 
-bool CScript::SendScript(char* text)
+bool CScript::SendScript(const char* text)
 {
-    m_len = strlen(text);
+    /*m_len = strlen(text);
     m_script = new char[m_len+1];
     strcpy(m_script, text);
     if ( !CheckToken() )  return false;
-    if ( !Compile() )  return false;
+    if ( !Compile() )  return false;*/
+
+    Ui::CEdit* edit = m_interface->CreateEdit(Math::Point(0.0f, 0.0f), Math::Point(0.0f, 0.0f), 0, EVENT_EDIT9);
+    edit->SetMaxChar(Ui::EDITSTUDIOMAX);
+    edit->SetAutoIndent(m_engine->GetEditIndentMode());
+    edit->SetText(text, true);
+    GetScript(edit);
+    m_interface->DeleteControl(EVENT_EDIT9);
 
     return true;
 }

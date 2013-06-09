@@ -28,7 +28,7 @@ endif()
 
 # Additional libraries per platform
 if (${MXE}) # MXE requires special treatment
-    set(PLATFORM_LIBS ${MXE_LIBS})  
+    set(PLATFORM_LIBS ${MXE_LIBS})
 elseif (${PLATFORM_WINDOWS})
     # because it isn't included in standard linking libraries
     set(PLATFORM_LIBS "-lintl")
@@ -120,6 +120,7 @@ object/mainmovie.cpp
 object/motion/motion.cpp
 object/motion/motionant.cpp
 object/motion/motionbee.cpp
+object/motion/motiondummy.cpp
 object/motion/motionhuman.cpp
 object/motion/motionmother.cpp
 object/motion/motionspider.cpp
@@ -154,6 +155,7 @@ physics/physics.cpp
 script/cbottoken.cpp
 script/cmdtoken.cpp
 script/script.cpp
+sound/sound.cpp
 ui/button.cpp
 ui/check.cpp
 ui/color.cpp
@@ -228,3 +230,4 @@ target_link_libraries(colobot ${LIBS})
 
 install(TARGETS colobot RUNTIME DESTINATION ${COLOBOT_INSTALL_BIN_DIR})
 set_target_properties(colobot PROPERTIES INSTALL_RPATH ${COLOBOT_INSTALL_LIB_DIR})
+

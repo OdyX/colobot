@@ -146,29 +146,33 @@ CApplication::CApplication()
 
     m_dataPath = COLOBOT_DEFAULT_DATADIR;
     m_langPath = COLOBOT_I18N_DIR;
+    m_texPackPath = "";
 
     m_language = LANGUAGE_ENV;
 
     m_lowCPU = true;
 
     for (int i = 0; i < DIR_MAX; ++i)
-        m_dataDirs[i] = nullptr;
+        m_standardDataDirs[i] = nullptr;
 
-    m_dataDirs[DIR_AI]       = "ai";
-    m_dataDirs[DIR_FONT]     = "fonts";
-    m_dataDirs[DIR_HELP]     = "help";
-    m_dataDirs[DIR_ICON]     = "icons";
-    m_dataDirs[DIR_LEVEL]    = "levels";
-    m_dataDirs[DIR_MODEL]    = "models";
-    m_dataDirs[DIR_MUSIC]    = "music";
-    m_dataDirs[DIR_SOUND]    = "sounds";
-    m_dataDirs[DIR_TEXTURE]  = "textures";
+    m_standardDataDirs[DIR_AI]       = "ai";
+    m_standardDataDirs[DIR_FONT]     = "fonts";
+    m_standardDataDirs[DIR_HELP]     = "help";
+    m_standardDataDirs[DIR_ICON]     = "icons";
+    m_standardDataDirs[DIR_LEVEL]    = "levels";
+    m_standardDataDirs[DIR_MODEL]    = "models";
+    m_standardDataDirs[DIR_MUSIC]    = "music";
+    m_standardDataDirs[DIR_SOUND]    = "sounds";
+    m_standardDataDirs[DIR_TEXTURE]  = "textures";
 }
 
 CApplication::~CApplication()
 {
     delete m_private;
     m_private = nullptr;
+
+    delete m_objMan;
+    m_objMan = nullptr;
 
     delete m_eventQueue;
     m_eventQueue = nullptr;
@@ -216,7 +220,8 @@ ParseArgsStatus CApplication::ParseArguments(int argc, char *argv[])
         OPT_LOGLEVEL,
         OPT_LANGUAGE,
         OPT_LANGDIR,
-        OPT_VBO
+        OPT_VBO,
+        OPT_TEXPACK
     };
 
     option options[] =
@@ -227,7 +232,9 @@ ParseArgsStatus CApplication::ParseArguments(int argc, char *argv[])
         { "loglevel", required_argument, nullptr, OPT_LOGLEVEL },
         { "language", required_argument, nullptr, OPT_LANGUAGE },
         { "langdir", required_argument, nullptr, OPT_LANGDIR },
-        { "vbo", required_argument, nullptr, OPT_VBO }
+        { "vbo", required_argument, nullptr, OPT_VBO },
+        { "texpack", required_argument, nullptr, OPT_TEXPACK },
+        { nullptr, 0, nullptr, 0}
     };
 
     opterr = 0;
@@ -264,6 +271,7 @@ ParseArgsStatus CApplication::ParseArguments(int argc, char *argv[])
                 GetLogger()->Message("  -language lang   set language (one of: en, de, fr, pl)\n");
                 GetLogger()->Message("  -langdir path    set custom language directory path\n");
                 GetLogger()->Message("  -vbo mode        set OpenGL VBO mode (one of: auto, enable, disable)\n");
+                GetLogger()->Message("  -texpack path    set path to custom texture pack\n");
                 return PARSE_ARGS_HELP;
             }
             case OPT_DEBUG:
@@ -275,6 +283,18 @@ ParseArgsStatus CApplication::ParseArguments(int argc, char *argv[])
             {
                 m_dataPath = optarg;
                 GetLogger()->Info("Using custom data dir: '%s'\n", m_dataPath.c_str());
+                break;
+            }
+            case OPT_LANGDIR:
+            {
+                m_langPath = optarg;
+                GetLogger()->Info("Using custom language dir: '%s'\n", m_langPath.c_str());
+                break;
+            }
+            case OPT_TEXPACK:
+            {
+                m_texPackPath = optarg;
+                GetLogger()->Info("Using texturepack: '%s'\n", m_texPackPath.c_str());
                 break;
             }
             case OPT_LOGLEVEL:
@@ -301,12 +321,6 @@ ParseArgsStatus CApplication::ParseArguments(int argc, char *argv[])
 
                 GetLogger()->Info("Using language %s\n", optarg);
                 m_language = language;
-                break;
-            }
-            case OPT_LANGDIR:
-            {
-                m_langPath = optarg;
-                GetLogger()->Info("Using custom language dir: '%s'\n", m_langPath.c_str());
                 break;
             }
             case OPT_VBO:
@@ -337,7 +351,21 @@ ParseArgsStatus CApplication::ParseArguments(int argc, char *argv[])
 
 bool CApplication::Create()
 {
+    std::string path;
+    bool defaultValues = false;
+
     GetLogger()->Info("Creating CApplication\n");
+
+    if (!GetProfile().InitCurrentDirectory())
+    {
+        GetLogger()->Warn("Config not found. Default values will be used!\n");
+        defaultValues = true;
+    }
+    else
+    {
+        if (GetProfile().GetLocalProfileString("Resources", "Data", path))
+            m_dataPath = path;
+    }
 
     boost::filesystem::path dataPath(m_dataPath);
     if (! (boost::filesystem::exists(dataPath) && boost::filesystem::is_directory(dataPath)) )
@@ -350,40 +378,46 @@ bool CApplication::Create()
         return false;
     }
 
+    GetProfile().SetLocalProfileString("Resources", "Data", m_dataPath);
+
     SetLanguage(m_language);
 
     //Create the sound instance.
-    if (!GetProfile().InitCurrentDirectory())
+    #ifdef OPENAL_SOUND
+    m_sound = static_cast<CSoundInterface *>(new ALSound());
+    #else
+    GetLogger()->Info("No sound support.\n");
+    m_sound = new CSoundInterface();
+    #endif
+
+    m_sound->Create(true);
+
+    // Cache sound files
+    if (defaultValues)
     {
-        GetLogger()->Warn("Config not found. Default values will be used!\n");
-        m_sound = new CSoundInterface();
+        GetProfile().SetLocalProfileString("Resources", "Sound", GetDataSubdirPath(DIR_SOUND));
+        GetProfile().SetLocalProfileString("Resources", "Music", GetDataSubdirPath(DIR_MUSIC));
+    }
+
+    if (GetProfile().GetLocalProfileString("Resources", "Sound", path))
+    {
+        m_sound->CacheAll(path);
     }
     else
     {
-        std::string path;
-        if (GetProfile().GetLocalProfileString("Resources", "Data", path))
-            m_dataPath = path;
-
-        #ifdef OPENAL_SOUND
-        m_sound = static_cast<CSoundInterface *>(new ALSound());
-        #else
-        GetLogger()->Info("No sound support.\n");
-        m_sound = new CSoundInterface();
-        #endif
-
-        m_sound->Create(true);
-        if (GetProfile().GetLocalProfileString("Resources", "Sound", path)) {
-            m_sound->CacheAll(path);
-        } else {
-            m_sound->CacheAll(GetDataSubdirPath(DIR_SOUND));
-        }
-
-        if (GetProfile().GetLocalProfileString("Resources", "Music", path)) {
-            m_sound->AddMusicFiles(path);
-        } else {
-            m_sound->AddMusicFiles(GetDataSubdirPath(DIR_MUSIC));
-        }
+        m_sound->CacheAll(GetDataSubdirPath(DIR_SOUND));
     }
+
+    if (GetProfile().GetLocalProfileString("Resources", "Music", path))
+    {
+        m_sound->AddMusicFiles(path);
+    }
+    else
+    {
+        m_sound->AddMusicFiles(GetDataSubdirPath(DIR_MUSIC));
+    }
+
+    GetLogger()->Info("CApplication created successfully\n");
 
     std::string standardInfoMessage =
       "\nPlease see the console output or log file\n"
@@ -479,11 +513,11 @@ bool CApplication::Create()
     m_modelManager = new Gfx::CModelManager(m_engine);
 
     // Create the robot application.
-    m_robotMain = new CRobotMain(this);
+    m_robotMain = new CRobotMain(this, !defaultValues);
+
+    if (defaultValues) m_robotMain->CreateIni();
 
     m_robotMain->ChangePhase(PHASE_WELCOME1);
-
-    GetLogger()->Info("CApplication created successfully\n");
 
     return true;
 }
@@ -940,12 +974,12 @@ end:
     return m_exitCode;
 }
 
-int CApplication::GetExitCode()
+int CApplication::GetExitCode() const
 {
     return m_exitCode;
 }
 
-const std::string& CApplication::GetErrorMessage()
+const std::string& CApplication::GetErrorMessage() const
 {
     return m_errorMessage;
 }
@@ -1239,7 +1273,7 @@ void CApplication::ResumeSimulation()
     GetLogger()->Info("Resume simulation\n");
 }
 
-bool CApplication::GetSimulationSuspended()
+bool CApplication::GetSimulationSuspended() const
 {
     return m_simulationSuspended;
 }
@@ -1297,48 +1331,48 @@ Event CApplication::CreateUpdateEvent()
     return frameEvent;
 }
 
-float CApplication::GetSimulationSpeed()
+float CApplication::GetSimulationSpeed() const
 {
     return m_simulationSpeed;
 }
 
-float CApplication::GetAbsTime()
+float CApplication::GetAbsTime() const
 {
     return m_absTime;
 }
 
-long long CApplication::GetExactAbsTime()
+long long CApplication::GetExactAbsTime() const
 {
     return m_exactAbsTime;
 }
 
-long long CApplication::GetRealAbsTime()
+long long CApplication::GetRealAbsTime() const
 {
     return m_realAbsTime;
 }
 
-float CApplication::GetRelTime()
+float CApplication::GetRelTime() const
 {
     return m_relTime;
 }
 
-long long CApplication::GetExactRelTime()
+long long CApplication::GetExactRelTime() const
 {
     return m_exactRelTime;
 }
 
-long long CApplication::GetRealRelTime()
+long long CApplication::GetRealRelTime() const
 {
     return m_realRelTime;
 }
 
-Gfx::GLDeviceConfig CApplication::GetVideoConfig()
+Gfx::GLDeviceConfig CApplication::GetVideoConfig() const
 {
     return m_deviceConfig;
 }
 
 VideoQueryResult CApplication::GetVideoResolutionList(std::vector<Math::IntPoint> &resolutions,
-                                                      bool fullScreen, bool resizeable)
+                                                      bool fullScreen, bool resizeable) const
 {
     resolutions.clear();
 
@@ -1385,27 +1419,27 @@ void CApplication::SetDebugMode(bool mode)
     m_debugMode = mode;
 }
 
-bool CApplication::GetDebugMode()
+bool CApplication::GetDebugMode() const
 {
     return m_debugMode;
 }
 
-int CApplication::GetKmods()
+int CApplication::GetKmods() const
 {
     return m_kmodState;
 }
 
-bool CApplication::GetKmodState(int kmod)
+bool CApplication::GetKmodState(int kmod) const
 {
     return (m_kmodState & kmod) != 0;
 }
 
-bool CApplication::GetTrackedKeyState(TrackedKey key)
+bool CApplication::GetTrackedKeyState(TrackedKey key) const
 {
     return (m_trackedKeys & key) != 0;
 }
 
-bool CApplication::GetMouseButtonState(int index)
+bool CApplication::GetMouseButtonState(int index) const
 {
     return (m_mouseButtonsState & (1<<index)) != 0;
 }
@@ -1423,7 +1457,7 @@ void CApplication::SetGrabInput(bool grab)
     SDL_WM_GrabInput(grab ? SDL_GRAB_ON : SDL_GRAB_OFF);
 }
 
-bool CApplication::GetGrabInput()
+bool CApplication::GetGrabInput() const
 {
     int result = SDL_WM_GrabInput(SDL_GRAB_QUERY);
     return result == SDL_GRAB_ON;
@@ -1438,12 +1472,12 @@ void CApplication::SetMouseMode(MouseMode mode)
         SDL_ShowCursor(SDL_DISABLE);
 }
 
-MouseMode CApplication::GetMouseMode()
+MouseMode CApplication::GetMouseMode() const
 {
     return m_mouseMode;
 }
 
-Math::Point CApplication::GetMousePos()
+Math::Point CApplication::GetMousePos() const
 {
     return m_mousePos;
 }
@@ -1456,7 +1490,7 @@ void CApplication::MoveMouse(Math::Point pos)
     SDL_WarpMouse(windowPos.x, windowPos.y);
 }
 
-std::vector<JoystickDevice> CApplication::GetJoystickList()
+std::vector<JoystickDevice> CApplication::GetJoystickList() const
 {
     std::vector<JoystickDevice> result;
 
@@ -1473,7 +1507,7 @@ std::vector<JoystickDevice> CApplication::GetJoystickList()
     return result;
 }
 
-JoystickDevice CApplication::GetJoystick()
+JoystickDevice CApplication::GetJoystick() const
 {
     return m_joystick;
 }
@@ -1495,36 +1529,37 @@ void CApplication::SetJoystickEnabled(bool enable)
     }
 }
 
-bool CApplication::GetJoystickEnabled()
+bool CApplication::GetJoystickEnabled() const
 {
     return m_joystickEnabled;
 }
 
-std::string CApplication::GetDataDirPath()
+std::string CApplication::GetDataDirPath() const
 {
     return m_dataPath;
 }
 
-std::string CApplication::GetDataSubdirPath(DataDir stdDir)
+std::string CApplication::GetDataSubdirPath(DataDir stdDir) const
 {
     int index = static_cast<int>(stdDir);
     assert(index >= 0 && index < DIR_MAX);
     std::stringstream str;
     str << m_dataPath;
     str << "/";
-    str << m_dataDirs[index];
+    str << m_standardDataDirs[index];
     return str.str();
 }
 
-std::string CApplication::GetDataFilePath(DataDir stdDir, const std::string& subpath)
+std::string CApplication::GetDataFilePath(DataDir stdDir, const std::string& subpath) const
 {
     int index = static_cast<int>(stdDir);
     assert(index >= 0 && index < DIR_MAX);
     std::stringstream str;
     str << m_dataPath;
     str << "/";
-    str << m_dataDirs[index];
-    if (stdDir == DIR_HELP) {
+    str << m_standardDataDirs[index];
+    if (stdDir == DIR_HELP)
+    {
         str << "/";
         str << GetLanguageChar();
     }
@@ -1533,12 +1568,31 @@ std::string CApplication::GetDataFilePath(DataDir stdDir, const std::string& sub
     return str.str();
 }
 
-Language CApplication::GetLanguage()
+std::string CApplication::GetTexPackFilePath(const std::string& textureName) const
+{
+    std::stringstream str;
+
+    if (! m_texPackPath.empty())
+    {
+        str << m_texPackPath;
+        str << "/";
+        str << textureName;
+        if (! boost::filesystem::exists(str.str()))
+        {
+            GetLogger()->Trace("Texture '%s' not in texpack\n", textureName.c_str());
+            str.str("");
+        }
+    }
+
+    return str.str();
+}
+
+Language CApplication::GetLanguage() const
 {
     return m_language;
 }
 
-char CApplication::GetLanguageChar()
+char CApplication::GetLanguageChar() const
 {
     char langChar = 'E';
     switch (m_language)
@@ -1630,7 +1684,7 @@ void CApplication::SetLanguage(Language language)
         }
         if (envLang == NULL)
         {
-            GetLogger()->Error("Failed to get language from environment, setting default language");
+            GetLogger()->Error("Failed to get language from environment, setting default language\n");
             m_language = LANGUAGE_ENGLISH;
         }
         else if (strncmp(envLang,"en",2) == 0)
@@ -1673,7 +1727,7 @@ void CApplication::SetLowCPU(bool low)
     m_lowCPU = low;
 }
 
-bool CApplication::GetLowCPU()
+bool CApplication::GetLowCPU() const
 {
     return m_lowCPU;
 }
@@ -1688,7 +1742,7 @@ void CApplication::StopPerformanceCounter(PerformanceCounter counter)
     GetSystemUtils()->GetCurrentTimeStamp(m_performanceCounters[counter][1]);
 }
 
-float CApplication::GetPerformanceCounterData(PerformanceCounter counter)
+float CApplication::GetPerformanceCounterData(PerformanceCounter counter) const
 {
     return m_performanceCountersData[counter];
 }

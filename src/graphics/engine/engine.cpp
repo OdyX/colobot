@@ -42,6 +42,8 @@
 
 #include "ui/interface.h"
 
+#include <iomanip>
+
 template<> Gfx::CEngine* CSingleton<Gfx::CEngine>::m_instance = nullptr;
 
 // Graphics module namespace
@@ -94,7 +96,6 @@ CEngine::CEngine(CApplication *app)
     m_backgroundCloudUp   = Color();
     m_backgroundCloudDown = Color();
     m_backgroundFull = false;
-    m_backgroundScale = Math::Point(1.0f, 1.0f);
     m_overFront = true;
     m_overColor = Color();
     m_overMode  = ENG_RSTATE_TCOLOR_BLACK;
@@ -237,7 +238,6 @@ void CEngine::SetTerrain(CTerrain* terrain)
     m_terrain = terrain;
 }
 
-
 bool CEngine::Create()
 {
     m_size = m_app->GetVideoConfig().size;
@@ -317,7 +317,7 @@ void CEngine::ResetAfterDeviceChanged()
 
     m_text->FlushCache();
 
-    // TODO reload textures, reset device state, etc.
+    FlushTextureCache();
 }
 
 bool CEngine::ProcessEvent(const Event &event)
@@ -992,7 +992,8 @@ void CEngine::ChangeSecondTexture(int objRank, const std::string& tex2Name)
             continue;  // already new
 
         EngineBaseObjTexTier& newP2 = AddLevel2(p1, p2.tex1Name, tex2Name);
-        newP2.next.swap(p2.next);
+        newP2.next.insert(newP2.next.end(), p2.next.begin(), p2.next.end());
+        p2.next.clear();
     }
 }
 
@@ -2119,24 +2120,43 @@ Texture CEngine::CreateTexture(const std::string& texName, const TextureCreatePa
         return Texture(); // invalid texture
 
     Texture tex;
+    CImage img;
 
     if (image == nullptr)
     {
-        CImage img;
-        if (! img.Load(m_app->GetDataFilePath(DIR_TEXTURE, texName)))
+        bool loadedFromTexPack = false;
+
+        std::string texPackName = m_app->GetTexPackFilePath(texName);
+        if (! texPackName.empty())
         {
-            std::string error = img.GetError();
-            GetLogger()->Error("Couldn't load texture '%s': %s, blacklisting\n", texName.c_str(), error.c_str());
-            m_texBlacklist.insert(texName);
-            return Texture(); // invalid texture
+            if (img.Load(texPackName))
+            {
+                loadedFromTexPack = true;
+            }
+            else
+            {
+                std::string error = img.GetError();
+                GetLogger()->Error("Couldn't load texture '%s' from texpack: %s, blacklisting the texpack path\n",
+                                   texName.c_str(), error.c_str());
+                m_texBlacklist.insert(texPackName);
+            }
         }
 
-        tex = m_device->CreateTexture(&img, params);
+        if (!loadedFromTexPack)
+        {
+            if (! img.Load(m_app->GetDataFilePath(DIR_TEXTURE, texName)))
+            {
+                std::string error = img.GetError();
+                GetLogger()->Error("Couldn't load texture '%s': %s, blacklisting\n", texName.c_str(), error.c_str());
+                m_texBlacklist.insert(texName);
+                return Texture(); // invalid texture
+            }
+        }
+
+        image = &img;
     }
-    else
-    {
-        tex = m_device->CreateTexture(image, params);
-    }
+
+    tex = m_device->CreateTexture(&img, params);
 
     if (! tex.Valid())
     {
@@ -2171,8 +2191,7 @@ Texture CEngine::LoadTexture(const std::string& name, const TextureCreateParams&
     if (it != m_texNameMap.end())
         return (*it).second;
 
-    Texture tex = CreateTexture(name, params);
-    return tex;
+    return CreateTexture(name, params);
 }
 
 bool CEngine::LoadAllTextures()
@@ -2188,7 +2207,11 @@ bool CEngine::LoadAllTextures()
     LoadTexture("map.png");
 
     if (! m_backgroundName.empty())
-        m_backgroundTex = LoadTexture(m_backgroundName);
+    {
+        TextureCreateParams params = m_defaultTexParams;
+        params.padToNearestPowerOfTwo = true;
+        m_backgroundTex = LoadTexture(m_backgroundName, params);
+    }
     else
         m_backgroundTex.SetInvalid();
 
@@ -2426,6 +2449,13 @@ void CEngine::DeleteTexture(const Texture& tex)
     m_texNameMap.erase(it);
 }
 
+void CEngine::FlushTextureCache()
+{
+    m_texNameMap.clear();
+    m_revTexNameMap.clear();
+    m_texBlacklist.clear();
+}
+
 bool CEngine::SetTexture(const std::string& name, int stage)
 {
     auto it = m_texNameMap.find(name);
@@ -2609,8 +2639,7 @@ float CEngine::GetFogStart(int rank)
 }
 
 void CEngine::SetBackground(const std::string& name, Color up, Color down,
-                                 Color cloudUp, Color cloudDown,
-                                 bool full, Math::Point scale)
+                            Color cloudUp, Color cloudDown, bool full)
 {
     if (m_backgroundTex.Valid())
     {
@@ -2624,15 +2653,17 @@ void CEngine::SetBackground(const std::string& name, Color up, Color down,
     m_backgroundCloudUp   = cloudUp;
     m_backgroundCloudDown = cloudDown;
     m_backgroundFull      = full;
-    m_backgroundScale     = scale;
 
     if (! m_backgroundName.empty())
-        m_backgroundTex = LoadTexture(m_backgroundName);
+    {
+        TextureCreateParams params = m_defaultTexParams;
+        params.padToNearestPowerOfTwo = true;
+        m_backgroundTex = LoadTexture(m_backgroundName, params);
+    }
 }
 
 void CEngine::GetBackground(std::string& name, Color& up, Color& down,
-                                 Color& cloudUp, Color& cloudDown,
-                                 bool &full, Math::Point& scale)
+                            Color& cloudUp, Color& cloudDown, bool &full)
 {
     name      = m_backgroundName;
     up        = m_backgroundColorUp;
@@ -2640,7 +2671,6 @@ void CEngine::GetBackground(std::string& name, Color& up, Color& down,
     cloudUp   = m_backgroundCloudUp;
     cloudDown = m_backgroundCloudDown;
     full      = m_backgroundFull;
-    scale     = m_backgroundScale;
 }
 
 void CEngine::SetForegroundName(const std::string& name)
@@ -3651,7 +3681,7 @@ void CEngine::DrawShadow()
     float lastIntensity = -1.0f;
     for (int i = 0; i < static_cast<int>( m_shadows.size() ); i++)
     {
-        if (m_shadows[i].hide)
+        if (m_shadows[i].hide || !m_shadows[i].used)
             continue;
 
         Math::Vector pos = m_shadows[i].pos;  // pos = center of the shadow on the ground
@@ -3900,8 +3930,12 @@ void CEngine::DrawBackgroundImage()
         v2 = v1+h;
     }
 
-    u2 *= m_backgroundScale.x;
-    v2 *= m_backgroundScale.y;
+    Math::Point backgroundScale;
+    backgroundScale.x = static_cast<float>(m_backgroundTex.originalSize.x) / static_cast<float>(m_backgroundTex.size.x);
+    backgroundScale.y = static_cast<float>(m_backgroundTex.originalSize.y) / static_cast<float>(m_backgroundTex.size.y);
+
+    u2 *= backgroundScale.x;
+    v2 *= backgroundScale.y;
 
     SetTexture(m_backgroundTex);
     SetState(ENG_RSTATE_OPAQUE_TEXTURE | ENG_RSTATE_WRAP);
@@ -4300,3 +4334,4 @@ void CEngine::DrawStats()
 
 
 } // namespace Gfx
+

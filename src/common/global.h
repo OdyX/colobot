@@ -106,6 +106,8 @@ enum Error
     ERR_INFO_NULL       = 390,      //! <  no information terminal
     ERR_VEH_VIRUS       = 400,      //! <  vehicle infected by a virus
     ERR_BAT_VIRUS       = 401,      //! <  building infected by a virus
+    ERR_DESTROY_NOTFOUND = 410,     //! <  not found anything to destroy
+    ERR_WRONG_OBJ       = 420,      //! <  inappropriate vehicle
     ERR_VEH_POWER       = 500,      //! <  no battery
     ERR_VEH_ENERGY      = 501,      //! <  more energy
     ERR_FLAG_FLY        = 510,      //! <  impossible in flight
@@ -295,3 +297,4 @@ extern int      g_build;                // constructible buildings
 extern int      g_researchDone;         // research done
 extern long     g_researchEnable;       // research available
 extern float    g_unit;                 // conversion factor
+

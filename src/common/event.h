@@ -396,6 +396,7 @@ enum EventType
     EVENT_OBJECT_MPOWER     = 1024,
     EVENT_OBJECT_BHELP      = 1040,
     EVENT_OBJECT_BTAKEOFF   = 1041,
+    EVENT_OBJECT_BDESTROY   = 1042,
     EVENT_OBJECT_BDERRICK   = 1050,
     EVENT_OBJECT_BSTATION   = 1051,
     EVENT_OBJECT_BFACTORY   = 1052,
@@ -729,16 +730,15 @@ struct Event
         ActiveEventData active;
     };
 
-    Event(EventType type = EVENT_NULL)
-    {
-        this->type = type;
-
-        systemEvent = false;
-        rTime = 0.0f;
-        mouseButtonsState = 0;
-        trackedKeysState = 0;
-        customParam = 0;
-    }
+    explicit Event(EventType _type = EVENT_NULL)
+     : type(_type)
+     , systemEvent(false)
+     , rTime(0.0f)
+     , kmodState(0)
+     , trackedKeysState(0)
+     , mouseButtonsState(0)
+     , customParam(0)
+    {}
 };
 
 
@@ -778,3 +778,4 @@ protected:
     int          m_tail;
     int          m_total;
 };
+

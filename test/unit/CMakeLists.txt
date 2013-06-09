@@ -89,6 +89,7 @@ ${SRC_DIR}/object/motion/motionspider.cpp
 ${SRC_DIR}/object/motion/motiontoto.cpp
 ${SRC_DIR}/object/motion/motionvehicle.cpp
 ${SRC_DIR}/object/motion/motionworm.cpp
+${SRC_DIR}/object/motion/motiondummy.cpp
 ${SRC_DIR}/object/object.cpp
 ${SRC_DIR}/object/objman.cpp
 ${SRC_DIR}/object/robotmain.cpp
@@ -117,6 +118,7 @@ ${SRC_DIR}/physics/physics.cpp
 ${SRC_DIR}/script/cbottoken.cpp
 ${SRC_DIR}/script/cmdtoken.cpp
 ${SRC_DIR}/script/script.cpp
+${SRC_DIR}/sound/sound.cpp
 ${SRC_DIR}/ui/button.cpp
 ${SRC_DIR}/ui/check.cpp
 ${SRC_DIR}/ui/color.cpp
@@ -176,6 +178,7 @@ set(UT_SOURCES
 main.cpp
 app/app_test.cpp
 graphics/engine/lightman_test.cpp
+math/func_test.cpp
 math/geometry_test.cpp
 math/matrix_test.cpp
 math/vector_test.cpp
@@ -227,7 +230,7 @@ ${LIBSNDFILE_LIBRARY}
 add_executable(colobot_ut ${COLOBOT_SOURCES} ${UT_SOURCES} ${OPENAL_SOURCES})
 target_link_libraries(colobot_ut ${LIBS})
 
-#add_test(colobot_ut ./colobot_ut)
+add_test(colobot_ut ./colobot_ut)
 
 # TODO: change the unit cases to independent automated tests to be included in colobot_ut
 add_subdirectory(common)
