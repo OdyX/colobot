@@ -1556,7 +1556,14 @@ void CPyro::ExploStart()
     for (int i = 0; i < OBJECTMAXPART; i++)
     {
         int objRank = m_object->GetObjectRank(i);
-        if ( objRank == -1 )  continue;
+        if (objRank == -1)  continue;
+
+        // TODO: refactor later to material change
+        int oldBaseObjRank = m_engine->GetObjectBaseRank(objRank);
+        int newBaseObjRank = m_engine->CreateBaseObject();
+        m_engine->CopyBaseObject(oldBaseObjRank, newBaseObjRank);
+        m_engine->SetObjectBaseRank(objRank, newBaseObjRank);
+
         m_engine->ChangeSecondTexture(objRank, "dirty04.png");
 
         Math::Vector pos = m_object->GetPosition(i);
@@ -1618,6 +1625,13 @@ void CPyro::BurnStart()
     {
         int objRank = m_object->GetObjectRank(i);
         if (objRank == -1) continue;
+
+        // TODO: refactor later to material change
+        int oldBaseObjRank = m_engine->GetObjectBaseRank(objRank);
+        int newBaseObjRank = m_engine->CreateBaseObject();
+        m_engine->CopyBaseObject(oldBaseObjRank, newBaseObjRank);
+        m_engine->SetObjectBaseRank(objRank, newBaseObjRank);
+
         m_engine->ChangeSecondTexture(objRank, "dirty04.png");
     }
     m_engine->LoadTexture("dirty04.png");
@@ -2384,6 +2398,7 @@ void CPyro::LightOperFrame(float rTime)
     {
         if ( m_progress < m_lightOper[i].progress )
         {
+            assert(i > 0); // TODO: if assert fails, fix the code
             float progress = (m_progress-m_lightOper[i-1].progress) / (m_lightOper[i].progress-m_lightOper[i-1].progress);
 
             float intensity = m_lightOper[i-1].intensity + (m_lightOper[i].intensity-m_lightOper[i-1].intensity)*progress;

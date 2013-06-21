@@ -143,6 +143,15 @@ enum PerformanceCounter
     PCNT_MAX
 };
 
+enum DebugMode
+{
+    DEBUG_SYS_EVENTS = 1 << 0,
+    DEBUG_APP_EVENTS = 1 << 1,
+    DEBUG_EVENTS     = DEBUG_SYS_EVENTS | DEBUG_APP_EVENTS,
+    DEBUG_MODELS     = 1 << 2,
+    DEBUG_ALL        = DEBUG_SYS_EVENTS | DEBUG_APP_EVENTS | DEBUG_MODELS
+};
+
 struct ApplicationPrivate;
 
 /**
@@ -234,6 +243,9 @@ public:
     //! Returns whether simulation is suspended
     bool        GetSimulationSuspended() const;
 
+    //! Resets time counters to account for time spent loading game
+    void        ResetTimeAfterLoading();
+
     //@{
     //! Management of simulation speed
     void            SetSimulationSpeed(float speed);
@@ -309,10 +321,11 @@ public:
     //! Moves (warps) the mouse cursor to the specified position (in interface coords)
     void        MoveMouse(Math::Point pos);
 
-    //! Management of debug mode (prints more info in logger)
+    //! Management of debug modes (printing more info in logger)
     //@{
-    void        SetDebugMode(bool mode);
-    bool        GetDebugMode() const;
+    void        SetDebugModeActive(DebugMode mode, bool active);
+    bool        IsDebugModeActive(DebugMode mode) const;
+    static bool ParseDebugModes(const std::string& str, int& debugModes);
     //@}
 
     //! Returns the full path to data directory
@@ -348,6 +361,8 @@ public:
     float       GetPerformanceCounterData(PerformanceCounter counter) const;
     //@}
 
+    bool        GetProtoMode() const;
+
 protected:
     //! Creates the window's SDL_Surface
     bool CreateVideoSurface();
@@ -358,8 +373,8 @@ protected:
     Event       CreateVirtualEvent(const Event& sourceEvent);
     //! Prepares a simulation update event
     TEST_VIRTUAL Event CreateUpdateEvent();
-    //! Handles some incoming events
-    bool        ProcessEvent(const Event& event);
+    //! Logs debug data for event
+    void        LogEvent(const Event& event);
     //! Renders the image in window
     void        Render();
 
@@ -367,6 +382,9 @@ protected:
     bool OpenJoystick();
     //! Closes the joystick device
     void CloseJoystick();
+
+    //! Internal procedure to reset time counters
+    void InternalResumeSimulation();
 
     //! Resets all performance counters to zero
     void ResetPerformanceCounters();
@@ -400,8 +418,8 @@ protected:
     int             m_exitCode;
     //! Whether application window is active
     bool            m_active;
-    //! Whether debug mode is enabled
-    bool            m_debugMode;
+    //! Bit array of active debug modes
+    long            m_debugModes;
 
     //! Message to be displayed as error to the user
     std::string     m_errorMessage;
@@ -468,6 +486,12 @@ protected:
     //! Path to directory with user texture pack
     std::string     m_texPackPath;
 
+    //@{
+    //! Scene to run on startup
+    std::string     m_runSceneName;
+    int             m_runSceneRank;
+    //@}
+
     const char*     m_standardDataDirs[DIR_MAX];
 
     //! Application language
@@ -475,5 +499,8 @@ protected:
 
     //! Low cpu mode
     bool            m_lowCPU;
+
+    //! Show prototype levels
+    bool            m_protoMode;
 };
 

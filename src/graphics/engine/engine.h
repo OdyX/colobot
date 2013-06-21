@@ -118,7 +118,7 @@ enum EngineRenderState
     //! Mode for rendering text
     ENG_RSTATE_TEXT             = (1<<18),
     //! Only opaque texture, no blending, etc.
-    ENG_RSTATE_OPAQUE_TEXTURE     = (1<<19),
+    ENG_RSTATE_OPAQUE_TEXTURE   = (1<<19),
     //! Only opaque color, no texture, blending, etc.
     ENG_RSTATE_OPAQUE_COLOR     = (1<<20)
 };
@@ -807,6 +807,9 @@ public:
 
     // Objects
 
+    //! Print debug info about an object
+    void            DebugObject(int rank);
+
     //! Creates a new object and returns its rank
     int             CreateObject();
     //! Deletes all objects, shadows and ground spots
@@ -1434,6 +1437,9 @@ protected:
 
     //! True when drawing 2D UI
     bool            m_interfaceMode;
+
+    bool            m_debugLights;
+    bool            m_debugDumpLights;
 };
 
 
