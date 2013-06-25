@@ -8,12 +8,8 @@ set(CMAKE_CXX_FLAGS_DEBUG ${COLOBOT_CXX_FLAGS_DEBUG})
 
 add_subdirectory(CBot)
 
-add_subdirectory(tools)
-
-add_subdirectory(po)
-
-if(${DESKTOP})
-    add_subdirectory(desktop)
+if(TOOLS)
+    add_subdirectory(tools)
 endif()
 
 
@@ -21,18 +17,18 @@ endif()
 set(OPTIONAL_LIBS "")
 set(OPTIONAL_INCLUDES "")
 
-if (${OPENAL_SOUND})
+if(OPENAL_SOUND)
     set(OPTIONAL_LIBS ${OPENAL_LIBRARY})
     set(OPTIONAL_INCLUDES ${OPENAL_INCLUDE_DIR})
 endif()
 
 # Additional libraries per platform
-if (${MXE}) # MXE requires special treatment
+if(MXE) # MXE requires special treatment
     set(PLATFORM_LIBS ${MXE_LIBS})
-elseif (${PLATFORM_WINDOWS})
+elseif(PLATFORM_WINDOWS)
     # because it isn't included in standard linking libraries
     set(PLATFORM_LIBS "-lintl")
-elseif(${PLATFORM_LINUX})
+elseif(PLATFORM_LINUX)
     # for clock_gettime
     set(PLATFORM_LIBS "-lrt -lX11")
 endif()
@@ -43,7 +39,7 @@ configure_file(common/config.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/common/config.h
 
 set(OPENAL_SRC "")
 
-if (${OPENAL_SOUND})
+if(OPENAL_SOUND)
     set(OPENAL_SRC
         sound/oalsound/alsound.cpp
         sound/oalsound/buffer.cpp
@@ -52,9 +48,9 @@ if (${OPENAL_SOUND})
 endif()
 
 # Platform-dependent implementation of system.h
-if (${PLATFORM_WINDOWS})
+if(PLATFORM_WINDOWS)
     set(SYSTEM_CPP_MODULE "system_windows.cpp")
-elseif(${PLATFORM_LINUX})
+elseif(PLATFORM_LINUX)
     set(SYSTEM_CPP_MODULE "system_linux.cpp")
 else()
     set(SYSTEM_CPP_MODULE "system_other.cpp")
@@ -189,6 +185,7 @@ ${OPENAL_SRC}
 set(LIBS
 CBot
 clipboard
+localename
 ${SDL_LIBRARY}
 ${SDLIMAGE_LIBRARY}
 ${SDLTTF_LIBRARY}
@@ -218,6 +215,7 @@ ${PNG_INCLUDE_DIRS}
 ${GLEW_INCLUDE_PATH}
 ${Boost_INCLUDE_DIRS}
 ${LIBSNDFILE_INCLUDE_DIR}
+${LOCALENAME_INCLUDE_DIR}
 ${OPTIONAL_INCLUDE_DIRS}
 ${CLIPBOARD_INCLUDE_DIR}
 )

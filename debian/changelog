@@ -1,5 +1,5 @@
-colobot (0.1.0~pre-alpha-git-dev~r385-g28b4e9a-1~OdyX0) UNRELEASED; urgency=low
+colobot (0.1.0-1) UNRELEASED; urgency=low
 
-  * Initial release. (Closes: #695829)
+  * Colobot Gold 0.1.0 alpha initial Debian release. (Closes: #695829)
 
- -- Didier Raboud <odyx@debian.org>  Fri, 21 Jun 2013 08:38:38 +0200
+ -- Didier Raboud <odyx@debian.org>  Tue, 25 Jun 2013 09:35:17 +0200

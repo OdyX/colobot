@@ -39,7 +39,7 @@ endif()
 
 # Create manpage from pod-formatted file
 find_program(POD2MAN pod2man)
-if(POD2MAN AND (NOT MSYS))
+if(POD2MAN)
     set(COLOBOT_MANPAGE_SECTION 6)
 
         macro(podman)
@@ -92,6 +92,7 @@ if(PO4A)
         string(REGEX REPLACE ".po$" "" LINGUAS ${LINGUAS_PO})
         foreach(LOCALE ${LINGUAS})
             podman(PODFILE lang/${LOCALE}/colobot.pod LOCALE ${LOCALE})
+            add_dependencies(man${PM_LOCALE} man_po4a)
         endforeach()
     endif()
 endif()
