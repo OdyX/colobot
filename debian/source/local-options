@@ -1,0 +1,2 @@
+# .travis.yml is different in the debian branch on purpose
+extend-diff-ignore = "(^|/)(\.travis\.yml)$"
