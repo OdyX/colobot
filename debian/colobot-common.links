@@ -1,0 +1,7 @@
+# From fonts-dejavu-core
+usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf	usr/share/games/colobot/fonts/dvu_sans_bold.ttf
+usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf	usr/share/games/colobot/fonts/dvu_sans_mono_bold.ttf
+usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf	usr/share/games/colobot/fonts/dvu_sans_mono.ttf
+usr/share/fonts/truetype/dejavu/DejaVuSans.ttf		usr/share/games/colobot/fonts/dvu_sans.ttf
+# From fonts-dejavu-extra
+usr/share/fonts/truetype/dejavu/DejaVuSans-Oblique.ttf	usr/share/games/colobot/fonts/dvu_sans_italic.ttf
