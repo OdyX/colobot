@@ -24,6 +24,8 @@ Build-Depends:
  google-mock,
  libgtest-dev
 Build-Depends-Indep: doxygen, graphviz
+Vcs-Git: git://anonscm.debian.org/collab-maint/colobot.git -b debian
+Vcs-Browser: http://anonscm.debian.org/gitweb/?p=collab-maint/colobot.git
 Standards-Version: 3.9.5
 Homepage: http://colobot.info
 
