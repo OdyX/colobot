@@ -14,12 +14,3 @@ override_dh_auto_configure:
 override_dh_auto_build:
 	dh_auto_build -a
 	dh_auto_build -i -- doc
-
-merge-dev:
-	set -e; \
-	DEV_COMMIT=$$(git describe --tags dev | sed -e 's/^colobot-gold-pre_alpha-//g'); \
-	git merge --no-commit dev; \
-	dch -b -v 0.1.0~pre-alpha-git-dev~r$${DEV_COMMIT}-1~OdyX0 "New snapshot of dev branch ($${DEV_COMMIT})"; \
-	sed -e "/New snapshot of dev branch ($${DEV_COMMIT})/d" -i debian/changelog ; \
-	git add debian/changelog; \
-	git commit -m "New snapshot of dev branch ($${DEV_COMMIT})"
