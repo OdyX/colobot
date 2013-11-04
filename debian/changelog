@@ -1,3 +1,18 @@
+colobot (0.1.1-1) unstable; urgency=low
+
+  * New 0.1.1 upstream release
+    - Fix non-freeness problems in data:
+      - Replace CREATIVE-licensed thunder sound by a public-domain
+        thunder sound
+      - Drop useless license statement about the photograph of the
+        NGC3606 nebula, which is in the public-domain
+  * Drop noisy development-merging machinery in debian/rules
+  * Add small gbp.conf
+  * Bump Standards-Version to 3.9.5 without changes needed
+  * Add Vcs-* fields to debian/control
+
+ -- Didier Raboud <odyx@debian.org>  Mon, 04 Nov 2013 09:47:45 +0100
+
 colobot (0.1.0-1) unstable; urgency=low
 
   * Colobot Gold 0.1.0 alpha initial Debian release. (Closes: #695829)
