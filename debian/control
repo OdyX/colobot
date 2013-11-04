@@ -24,7 +24,7 @@ Build-Depends:
  google-mock,
  libgtest-dev
 Build-Depends-Indep: doxygen, graphviz
-Standards-Version: 3.9.4
+Standards-Version: 3.9.5
 Homepage: http://colobot.info
 
 Package: colobot
