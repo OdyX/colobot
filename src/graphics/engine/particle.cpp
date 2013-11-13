@@ -2875,6 +2875,11 @@ void CParticle::DrawParticleNorm(int i)
         vertex[2] = Vertex(corner[3], n, Math::Point(m_particle[i].texSup.x, m_particle[i].texInf.y));
         vertex[3] = Vertex(corner[2], n, Math::Point(m_particle[i].texInf.x, m_particle[i].texInf.y));
 
+        // On first call, the coordinates are all 0, in that case, return as it's wrong.
+        if((m_particle[i].texSup.x-m_particle[i].texInf.x) == 0.0f || (m_particle[i].texSup.y - m_particle[i].texInf.y) == 0.0f ) {
+            GetLogger()->Warn("One particle texture dimension is zero, most probably wrong!\n");
+            return;
+        }
         m_device->DrawPrimitive(PRIMITIVE_TRIANGLE_STRIP, vertex, 4);
         m_engine->AddStatisticTriangle(2);
     }
