@@ -3,7 +3,7 @@ compiler:
   - gcc
 script: mkdir build; cd build; CC=/opt/local/bin/gcc-mp-4.8 CXX=/opt/local/bin/g++-mp-4.8 cmake .. -DCMAKE_VERBOSE_MAKEFILE=ON -DOPENAL_SOUND=1 -DTESTS=1 && make all doc test && DESTDIR=. make install
 before_install:
-  - wget 'https://distfiles.macports.org/MacPorts/MacPorts-2.2.1-10.8-MountainLion.pkg' > mp.pkg
+  - wget 'https://distfiles.macports.org/MacPorts/MacPorts-2.2.1-10.8-MountainLion.pkg' -O mp.pkg
   - sudo installer -pkg mp.pkg -target /
   - sudo /opt/local/bin/port -v selfupdate
   - sudo /opt/local/bin/port install gcc48
