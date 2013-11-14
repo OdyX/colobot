@@ -8,7 +8,7 @@ before_install:
   - sudo /opt/local/bin/port -v selfupdate
   - sudo /opt/local/bin/port install gcc48
   - sudo /opt/local/bin/port install python27 || sudo /opt/local/bin/port -f activate python27
-  - sudo /opt/local/bin/port install cmake libsdl libsdl_image libsd_ttf boost libsndfile glew libicns librsvg
+  - sudo /opt/local/bin/port install cmake libsdl libsdl_image libsdl_ttf boost libsndfile glew libicns librsvg
   - sudo /opt/local/bin/port -d -ns upgrade --force tiff
   - sudo /opt/local/bin/port -d -ns upgrade --force boost configure.compiler=macports-gcc-4.8
 notifications:
