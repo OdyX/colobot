@@ -5,9 +5,10 @@ script: mkdir build; cd build; CC=/opt/local/bin/gcc-mp-4.8 CXX=/opt/local/bin/g
 before_install:
   - wget 'https://distfiles.macports.org/MacPorts/MacPorts-2.2.1-10.8-MountainLion.pkg' -O mp.pkg
   - sudo installer -pkg mp.pkg -target /
-  - sudo /opt/local/bin/port -v selfupdate
-  - sudo /opt/local/bin/port install gcc48
-  - sudo /opt/local/bin/port install python27 || sudo /opt/local/bin/port -f activate python27
-  - sudo /opt/local/bin/port install cmake libsdl libsdl_image libsdl_ttf boost libsndfile glew libicns librsvg
+  - export PATH="/opt/local/bin:$PATH"
+  - sudo port -v selfupdate
+  - sudo port install gcc48
+  - sudo port install python27 || sudo /opt/local/bin/port -f activate python27
+  - sudo port install cmake libsdl libsdl_image libsdl_ttf boost libsndfile glew libicns librsvg
 notifications:
   email: false
