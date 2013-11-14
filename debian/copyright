@@ -25,7 +25,7 @@ Copyright: 1992-2007, Trolltech ASA
            2008,      Freddie Witherden
 License: GPL-2+
 
-Files: lib/gtest/*
+Files: lib/gtest/* lib/gmock/*
 Copyright: 2003-2009, Google Inc
 License: BSD-3-clause
 
