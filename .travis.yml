@@ -3,11 +3,12 @@ compiler:
   - gcc
 script: mkdir build; cd build; CC=/opt/local/bin/gcc-mp-4.8 CXX=/opt/local/bin/g++-mp-4.8 cmake .. -DCMAKE_VERBOSE_MAKEFILE=ON -DOPENAL_SOUND=1 -DTESTS=1 && make all doc test && DESTDIR=. make install
 before_install:
-  - git submodule update --init --recursive
-  - sudo port list
-  - sudo port install gcc48
-  - sudo port install cmake libsdl libsdl_image libsd_ttf boost libsndfile glew libicns librsvg
-  - sudo port -d -ns upgrade --force tiff
-  - sudo port -d -ns upgrade --force boost configure.compiler=macports-gcc-4.8
+  - wget 'https://distfiles.macports.org/MacPorts/MacPorts-2.2.1-10.8-MountainLion.pkg' > mp.pkg
+  - sudo installer -pkg mp.pkg -target /
+  - sudo /opt/local/bin/port -v selfupdate
+  - sudo /opt/local/bin/port install gcc48
+  - sudo /opt/local/bin/port install cmake libsdl libsdl_image libsd_ttf boost libsndfile glew libicns librsvg
+  - sudo /opt/local/bin/port -d -ns upgrade --force tiff
+  - sudo /opt/local/bin/port -d -ns upgrade --force boost configure.compiler=macports-gcc-4.8
 notifications:
   email: false
