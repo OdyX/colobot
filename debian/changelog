@@ -1,3 +1,16 @@
+colobot (0.1.1-2) unstable; urgency=low
+
+  * debian/copyright fixes:
+    - Add gnulib's localename copy copyright mention
+    - Add gmock copyright reference
+    - Add license statement for DejaVu fonts' copy (which is not used in
+      the binary package)
+  * Package re-organisation:
+    - Move fonts links and translations back to colobot main package
+    - Split colobot-common into -common, -sounds and -textures
+
+ -- Didier Raboud <odyx@debian.org>  Thu, 14 Nov 2013 13:41:55 +0100
+
 colobot (0.1.1-1) unstable; urgency=low
 
   * New 0.1.1 upstream release
