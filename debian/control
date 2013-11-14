@@ -33,7 +33,10 @@ Package: colobot
 Architecture: any
 Depends: ${shlibs:Depends},
  ${misc:Depends},
+ fonts-dejavu-core, fonts-dejavu-extra,
  colobot-common (>= ${source:Version})
+Replaces: colobot-common (<< 0.1.1-2)
+Breaks: colobot-common (<< 0.1.1-2)
 Description: educational programming strategy game
  Colobot (Colonize with Bots) is an educational game aiming to teach
  programming through entertainment. You are playing as an astronaut on a
@@ -44,7 +47,6 @@ Description: educational programming strategy game
 Package: colobot-common
 Architecture: all
 Depends: ${misc:Depends},
- fonts-dejavu-core, fonts-dejavu-extra
 Recommends: colobot (>= ${source:Version})
 Description: educational programming strategy game - data
  Colobot (Colonize with Bots) is an educational game aiming to teach
