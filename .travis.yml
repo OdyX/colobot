@@ -9,6 +9,6 @@ before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -qq --no-install-recommends devscripts dpkg-dev lintian equivs
   - mk-build-deps --root-cmd sudo --tool "apt-get -qq --no-install-recommends" --install --remove
-  - dch -b -v 0.1.0~git$(date +%Y%m%d%H%M)00-1~travis0 -m "Automated test-build."
+  - dch -b -v 0.1.2~git$(date +%Y%m%d%H%M)00-1~travis0 -m "Automated test-build."
 notifications:
   email: false
