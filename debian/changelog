@@ -1,3 +1,10 @@
+colobot (0.1.2-2) unstable; urgency=low
+
+  * Add patch to let kFreeBSD and Hurd be considered Linuxes and
+    therefore let the desktop files be installed
+
+ -- Didier Raboud <odyx@debian.org>  Tue, 26 Nov 2013 12:32:45 +0100
+
 colobot (0.1.2-1) unstable; urgency=low
 
   * New 0.1.2 upstream release
