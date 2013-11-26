@@ -1,3 +1,13 @@
+colobot (0.1.2-1) unstable; urgency=low
+
+  * New 0.1.2 upstream release
+    - Add Russian translation of interface and levels
+    - Replace x86 assembler "int $3" code with assert(0)
+    - New levels translation infrastructure in -data
+  * Add patch to hide the black squares bug
+
+ -- Didier Raboud <odyx@debian.org>  Tue, 26 Nov 2013 09:25:48 +0100
+
 colobot (0.1.1-2) unstable; urgency=low
 
   * debian/copyright fixes:
