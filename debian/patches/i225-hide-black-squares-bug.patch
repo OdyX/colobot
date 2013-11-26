@@ -1,0 +1,20 @@
+Description: Hide upstream issue #225 "Black rectangles shows due to particle and fire effects"
+Author: Didier Raboud <odyx@debian.org>
+Origin: vendor
+Forwarded: https://github.com/colobot/colobot/issues/225
+Last-Updated: 2013-11-26
+--- a/src/graphics/engine/particle.cpp
++++ b/src/graphics/engine/particle.cpp
+@@ -2875,6 +2875,12 @@
+         vertex[2] = Vertex(corner[3], n, Math::Point(m_particle[i].texSup.x, m_particle[i].texInf.y));
+         vertex[3] = Vertex(corner[2], n, Math::Point(m_particle[i].texInf.x, m_particle[i].texInf.y));
+ 
++        // On first call, the coordinates are all 0, in that case, return as it's wrong.
++        if((m_particle[i].texSup.x-m_particle[i].texInf.x) == 0.0f || (m_particle[i].texSup.y - m_particle[i].texInf.y) == 0.0f ) {
++            // One particle texture dimension is zero, most probably wrong!
++            // Don't display it then.
++            return;
++        }
+         m_device->DrawPrimitive(PRIMITIVE_TRIANGLE_STRIP, vertex, 4);
+         m_engine->AddStatisticTriangle(2);
+     }
