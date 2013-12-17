@@ -1,0 +1,6 @@
+?package(colobot):needs="X11" \
+  section="Games/Adventure" \
+  title="Colobot" \
+  longtitle="Colobot - Colonize with bots - Game to learn programming" \
+  icon="/usr/share/pixmaps/colobot.xpm" \
+  command="/usr/games/colobot"

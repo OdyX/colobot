@@ -4,6 +4,7 @@ usr/share/applications/colobot.desktop
 usr/share/icons/hicolor/scalable/apps/colobot.svg
 usr/share/icons/hicolor/48x48/apps/colobot.png
 usr/share/icons/hicolor/32x32/apps/colobot.png
+debian/colobot.xpm usr/share/pixmaps/
 usr/share/icons/hicolor/16x16/apps/colobot.png
 usr/share/man/man6/colobot.6
 usr/share/man/*/man6/colobot.6
