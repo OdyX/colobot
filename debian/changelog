@@ -1,3 +1,13 @@
+colobot (0.1.2-4) unstable; urgency=medium
+
+  * Add menu file and xpm icon, therefore add imagemagick to Build-Depends to
+    convert the icon from the 32x32 png (Closes: #731838)
+  * Replace the patch to hide the black squares bug by the upstream fix
+  * Move the repository from collab-maint to pkg-games; update the VCS-*
+    fields accordingly
+
+ -- Didier Raboud <odyx@debian.org>  Fri, 14 Mar 2014 13:53:55 +0100
+
 colobot (0.1.2-3) unstable; urgency=low
 
   * Try another patch to consider non-Linux GNU variants
