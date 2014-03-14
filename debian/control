@@ -25,8 +25,8 @@ Build-Depends:
  libgtest-dev,
  imagemagick
 Build-Depends-Indep: doxygen, graphviz
-Vcs-Git: git://anonscm.debian.org/collab-maint/colobot.git -b debian
-Vcs-Browser: http://anonscm.debian.org/gitweb/?p=collab-maint/colobot.git
+Vcs-Git: https://alioth.debian.org/anonscm/git/pkg-games/colobot.git -b debian
+Vcs-Browser: http://anonscm.debian.org/gitweb/?p=pkg-games/colobot.git
 Standards-Version: 3.9.5
 Homepage: http://colobot.info
 
