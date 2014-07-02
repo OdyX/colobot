@@ -1,3 +1,14 @@
+colobot (0.1.3-1) unstable; urgency=medium
+
+  * New 0.1.3 upstream release
+
+  * Drop patches that were from upstream
+  * Update debian/copyright:
+    - Copyright dates
+    - New CC-BY-SA-4.0 files in the data tarball
+
+ -- Didier Raboud <odyx@debian.org>  Wed, 02 Jul 2014 12:03:20 +0200
+
 colobot (0.1.2-4) unstable; urgency=medium
 
   * Add menu file and xpm icon, therefore add imagemagick to Build-Depends to
